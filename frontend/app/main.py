@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Form, File, UploadFile, Depends
+from fastapi import FastAPI, Request, Form, File, UploadFile, Depends, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -25,13 +25,26 @@ async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request, "error": None})
 
 @app.post("/login", response_class=HTMLResponse)
-async def login(request: Request, username: str = Form(...), password: str = Form(...)):
+async def login(request: Request):
+    form_data = await request.form()
+    username = form_data.get("username")
+    password = form_data.get("password")
+    
+    if not username or not password:
+        return templates.TemplateResponse(
+            "login.html",
+            {"request": request, "error": "Username and password are required"}
+        )
+    
     try:
         token_data = await api_client.login(username, password)
         session_tokens[request.client.host] = token_data["access_token"]
         return RedirectResponse("/asanas", status_code=303)
     except Exception as e:
-        return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid login"})
+        return templates.TemplateResponse(
+            "login.html",
+            {"request": request, "error": "Invalid username or password"}
+        )
 
 @app.get("/logout")
 async def logout(request: Request):

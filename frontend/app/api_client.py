@@ -6,13 +6,24 @@ BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 async def login(username: str, password: str):
     async with httpx.AsyncClient() as client:
-        response = await client.post(
-            f"{BACKEND_URL}/token",
-            data={"username": username, "password": password},
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
-        )
-        response.raise_for_status()
-        return response.json()
+        try:
+            response = await client.post(
+                f"{BACKEND_URL}/token",
+                data={
+                    "username": username,
+                    "password": password,
+                    "grant_type": "password"
+                },
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Accept": "application/json"
+                }
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPError as e:
+            print(f"Login error: {str(e)}")
+            raise Exception("Invalid username or password")
 
 async def get_asanas(token: str):
     headers = {"Authorization": f"Bearer {token}"}
