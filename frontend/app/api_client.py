@@ -1,7 +1,8 @@
 import httpx
 import os
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:8000")
+# Используем localhost если BACKEND_URL не установлен
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 async def login(username: str, password: str):
     async with httpx.AsyncClient() as client:

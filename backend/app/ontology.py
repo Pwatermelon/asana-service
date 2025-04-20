@@ -3,16 +3,29 @@ from app import config
 from typing import Optional, Dict, Any
 import uuid
 
-g = Graph()
-g.parse(config.OWL_FILE_PATH, format="xml")
-
 ASANA = Namespace("http://www.semanticweb.org/platinum_watermelon/ontologies/Asana#")
 
+def get_graph():
+    g = Graph()
+    g.parse(config.OWL_FILE_PATH, format="xml")
+    return g
+
 def load_asanas():
+    g = get_graph()  # Перезагружаем граф перед каждым чтением
     asanas = []
-    for asana in g.subjects(RDF.type, ASANA.Asana):
+    print("Loading asanas from graph...")  # Отладочная информация
+    
+    # Получаем все асаны
+    all_asanas = list(g.subjects(RDF.type, ASANA.Asana))
+    print(f"Found {len(all_asanas)} asanas in graph")  # Отладочная информация
+    
+    for asana in all_asanas:
+        print(f"Processing asana: {asana}")  # Отладочная информация
         name_obj = g.value(asana, ASANA.hasName)
         photo_obj = g.value(asana, ASANA.hasPhoto)
+        
+        print(f"Name object: {name_obj}")  # Отладочная информация
+        print(f"Photo object: {photo_obj}")  # Отладочная информация
         
         name_data = {
             "ru": str(g.value(name_obj, ASANA.nameInRussian)) if name_obj else "",
@@ -23,6 +36,7 @@ def load_asanas():
         source_obj = None
         if photo_obj:
             source_obj = g.value(photo_obj, ASANA.hasSource)
+            print(f"Source object: {source_obj}")  # Отладочная информация
         
         source_data = {}
         if source_obj:
@@ -34,15 +48,20 @@ def load_asanas():
         
         photo_base64 = str(g.value(photo_obj, ASANA.base64Photo)) if photo_obj else ""
         
-        asanas.append({
+        asana_data = {
             "id": str(asana),
             "name": name_data,
             "source": source_data,
             "photo": photo_base64
-        })
+        }
+        print(f"Adding asana data: {asana_data}")  # Отладочная информация
+        asanas.append(asana_data)
+    
+    print(f"Total asanas loaded: {len(asanas)}")  # Отладочная информация
     return asanas
 
 def add_asana(name_id: str, source_id: str, photo_base64: str):
+    g = get_graph()  # Получаем свежую копию графа
     # Create new asana instance
     asana_uri = URIRef(f"{ASANA}asana_{uuid.uuid4()}")
     g.add((asana_uri, RDF.type, ASANA.Asana))
@@ -62,6 +81,7 @@ def add_asana(name_id: str, source_id: str, photo_base64: str):
     return str(asana_uri)
 
 def load_sources():
+    g = get_graph()  # Перезагружаем граф
     sources = []
     for source in g.subjects(RDF.type, ASANA.AsanaSource):
         sources.append({
@@ -73,6 +93,7 @@ def load_sources():
     return sources
 
 def add_source(source_data: Dict[str, Any]) -> str:
+    g = get_graph()  # Получаем свежую копию графа
     source_uri = URIRef(f"{ASANA}source_{uuid.uuid4()}")
     g.add((source_uri, RDF.type, ASANA.AsanaSource))
     g.add((source_uri, ASANA.sourseTitle, Literal(source_data["title"])))
@@ -82,6 +103,7 @@ def add_source(source_data: Dict[str, Any]) -> str:
     return str(source_uri)
 
 def load_asana_names():
+    g = get_graph()  # Перезагружаем граф
     names = []
     for name in g.subjects(RDF.type, ASANA.AsanaName):
         names.append({
@@ -93,6 +115,7 @@ def load_asana_names():
     return names
 
 def add_asana_name(name_data: Dict[str, str]) -> str:
+    g = get_graph()  # Получаем свежую копию графа
     name_uri = URIRef(f"{ASANA}name_{uuid.uuid4()}")
     g.add((name_uri, RDF.type, ASANA.AsanaName))
     g.add((name_uri, ASANA.nameInRussian, Literal(name_data["name_ru"])))
