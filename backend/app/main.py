@@ -43,29 +43,51 @@ async def get_asanas(user: str = Depends(get_current_user)):
 
 @app.post("/asana")
 async def post_asana(
-    asana: AsanaCreate,
+    selected_name: str = Form(None),
+    new_name_ru: str = Form(None),
+    new_name_en: str = Form(None),
+    new_name_sanskrit: str = Form(None),
+    selected_source: str = Form(None),
+    new_source_title: str = Form(None),
+    new_source_author: str = Form(None),
+    new_source_year: int = Form(None),
+    photo: UploadFile = File(...),
     user: str = Depends(get_current_user)
 ):
     # Handle the name (either existing or new)
     name_id = None
-    if asana.selected_name:
-        name_id = asana.selected_name
-    elif asana.new_name:
-        name_id = add_asana_name(asana.new_name)
+    if selected_name and selected_name != "new":
+        name_id = selected_name
+    elif all([new_name_ru, new_name_en, new_name_sanskrit]):
+        name_data = AsanaNameCreate(
+            name_ru=new_name_ru,
+            name_en=new_name_en,
+            name_sanskrit=new_name_sanskrit
+        )
+        name_id = add_asana_name(name_data)
     else:
-        raise HTTPException(status_code=400, detail="Either selected_name or new_name must be provided")
+        raise HTTPException(status_code=400, detail="Either selected_name or all new name fields must be provided")
 
     # Handle the source (either existing or new)
     source_id = None
-    if asana.selected_source:
-        source_id = asana.selected_source
-    elif asana.new_source:
-        source_id = add_source(asana.new_source)
+    if selected_source and selected_source != "new":
+        source_id = selected_source
+    elif all([new_source_title, new_source_author, new_source_year]):
+        source_data = SourceCreate(
+            title=new_source_title,
+            author=new_source_author,
+            year=new_source_year
+        )
+        source_id = add_source(source_data)
     else:
-        raise HTTPException(status_code=400, detail="Either selected_source or new_source must be provided")
+        raise HTTPException(status_code=400, detail="Either selected_source or all new source fields must be provided")
+
+    # Convert photo to base64
+    photo_content = await photo.read()
+    photo_base64 = base64.b64encode(photo_content).decode()
 
     # Add the asana with the name and source
-    add_asana(name_id=name_id, source_id=source_id, photo_base64=asana.photo_base64)
+    add_asana(name_id=name_id, source_id=source_id, photo_base64=photo_base64)
     return {"message": "Asana added successfully"}
 
 @app.get("/sources")
