@@ -61,24 +61,36 @@ def load_asanas():
     return asanas
 
 def add_asana(name_id: str, source_id: str, photo_base64: str):
-    g = get_graph()  # Получаем свежую копию графа
-    # Create new asana instance
-    asana_uri = URIRef(f"{ASANA}asana_{uuid.uuid4()}")
-    g.add((asana_uri, RDF.type, ASANA.Asana))
-    
-    # Link existing name
-    name_uri = URIRef(name_id)
-    g.add((asana_uri, ASANA.hasName, name_uri))
-    
-    # Create and link photo
-    photo_uri = URIRef(f"{ASANA}photo_{uuid.uuid4()}")
-    g.add((photo_uri, RDF.type, ASANA.AsanaPhoto))
-    g.add((photo_uri, ASANA.base64Photo, Literal(photo_base64)))
-    g.add((photo_uri, ASANA.hasSource, URIRef(source_id)))
-    g.add((asana_uri, ASANA.hasPhoto, photo_uri))
-    
-    g.serialize(destination=config.OWL_FILE_PATH, format="xml")
-    return str(asana_uri)
+    try:
+        g = get_graph()  # Получаем свежую копию графа
+        print(f"Creating new asana with name_id={name_id}, source_id={source_id}")
+        
+        # Create new asana instance
+        asana_uri = URIRef(f"{ASANA}asana_{uuid.uuid4()}")
+        print(f"Created asana URI: {asana_uri}")
+        
+        g.add((asana_uri, RDF.type, ASANA.Asana))
+        
+        # Link existing name
+        name_uri = URIRef(name_id)
+        print(f"Linking name: {name_uri}")
+        g.add((asana_uri, ASANA.hasName, name_uri))
+        
+        # Create and link photo
+        photo_uri = URIRef(f"{ASANA}photo_{uuid.uuid4()}")
+        print(f"Created photo URI: {photo_uri}")
+        g.add((photo_uri, RDF.type, ASANA.AsanaPhoto))
+        g.add((photo_uri, ASANA.base64Photo, Literal(photo_base64)))
+        g.add((photo_uri, ASANA.hasSource, URIRef(source_id)))
+        g.add((asana_uri, ASANA.hasPhoto, photo_uri))
+        
+        print("Serializing graph to file...")
+        g.serialize(destination=config.OWL_FILE_PATH, format="xml")
+        print("Graph serialized successfully")
+        return str(asana_uri)
+    except Exception as e:
+        print(f"Error in add_asana: {str(e)}")
+        raise e
 
 def load_sources():
     g = get_graph()  # Перезагружаем граф
@@ -93,14 +105,25 @@ def load_sources():
     return sources
 
 def add_source(source_data: Dict[str, Any]) -> str:
-    g = get_graph()  # Получаем свежую копию графа
-    source_uri = URIRef(f"{ASANA}source_{uuid.uuid4()}")
-    g.add((source_uri, RDF.type, ASANA.AsanaSource))
-    g.add((source_uri, ASANA.sourseTitle, Literal(source_data["title"])))
-    g.add((source_uri, ASANA.sourceAuthor, Literal(source_data["author"])))
-    g.add((source_uri, ASANA.sourceYear, Literal(source_data["year"])))
-    g.serialize(destination=config.OWL_FILE_PATH, format="xml")
-    return str(source_uri)
+    try:
+        g = get_graph()
+        print(f"Creating new source with data: {source_data}")
+        
+        source_uri = URIRef(f"{ASANA}source_{uuid.uuid4()}")
+        print(f"Created source URI: {source_uri}")
+        
+        g.add((source_uri, RDF.type, ASANA.AsanaSource))
+        g.add((source_uri, ASANA.sourseTitle, Literal(source_data["title"])))
+        g.add((source_uri, ASANA.sourceAuthor, Literal(source_data["author"])))
+        g.add((source_uri, ASANA.sourceYear, Literal(source_data["year"])))
+        
+        print("Serializing graph to file...")
+        g.serialize(destination=config.OWL_FILE_PATH, format="xml")
+        print("Graph serialized successfully")
+        return str(source_uri)
+    except Exception as e:
+        print(f"Error in add_source: {str(e)}")
+        raise e
 
 def load_asana_names():
     g = get_graph()  # Перезагружаем граф
@@ -115,11 +138,22 @@ def load_asana_names():
     return names
 
 def add_asana_name(name_data: Dict[str, str]) -> str:
-    g = get_graph()  # Получаем свежую копию графа
-    name_uri = URIRef(f"{ASANA}name_{uuid.uuid4()}")
-    g.add((name_uri, RDF.type, ASANA.AsanaName))
-    g.add((name_uri, ASANA.nameInRussian, Literal(name_data["name_ru"])))
-    g.add((name_uri, ASANA.nameInEnglish, Literal(name_data["name_en"])))
-    g.add((name_uri, ASANA.nameInSanskrit, Literal(name_data["name_sanskrit"])))
-    g.serialize(destination=config.OWL_FILE_PATH, format="xml")
-    return str(name_uri)
+    try:
+        g = get_graph()
+        print(f"Creating new name with data: {name_data}")
+        
+        name_uri = URIRef(f"{ASANA}name_{uuid.uuid4()}")
+        print(f"Created name URI: {name_uri}")
+        
+        g.add((name_uri, RDF.type, ASANA.AsanaName))
+        g.add((name_uri, ASANA.nameInRussian, Literal(name_data["name_ru"])))
+        g.add((name_uri, ASANA.nameInEnglish, Literal(name_data["name_en"])))
+        g.add((name_uri, ASANA.nameInSanskrit, Literal(name_data["name_sanskrit"])))
+        
+        print("Serializing graph to file...")
+        g.serialize(destination=config.OWL_FILE_PATH, format="xml")
+        print("Graph serialized successfully")
+        return str(name_uri)
+    except Exception as e:
+        print(f"Error in add_asana_name: {str(e)}")
+        raise e

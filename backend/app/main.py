@@ -55,43 +55,60 @@ async def post_asana(
     user: str = Depends(get_current_user)
 ):
     try:
+        print(f"Received form data:")
+        print(f"Selected name: {selected_name}")
+        print(f"New name data: ru={new_name_ru}, en={new_name_en}, sanskrit={new_name_sanskrit}")
+        print(f"Selected source: {selected_source}")
+        print(f"New source data: title={new_source_title}, author={new_source_author}, year={new_source_year}")
+        
         # Обработка названия
         name_id = None
         if selected_name != "new":
+            print(f"Using existing name ID: {selected_name}")
             name_id = selected_name
         elif all([new_name_ru, new_name_en, new_name_sanskrit]):
+            print("Creating new name...")
             name_data = {
                 "name_ru": new_name_ru,
                 "name_en": new_name_en,
                 "name_sanskrit": new_name_sanskrit
             }
             name_id = add_asana_name(name_data)
+            print(f"Created new name with ID: {name_id}")
         else:
             raise HTTPException(status_code=400, detail="При добавлении нового названия все языковые поля обязательны")
 
         # Обработка источника
         source_id = None
         if selected_source != "new":
+            print(f"Using existing source ID: {selected_source}")
             source_id = selected_source
         elif all([new_source_title, new_source_author, new_source_year]):
+            print("Creating new source...")
             source_data = {
                 "title": new_source_title,
                 "author": new_source_author,
                 "year": int(new_source_year)
             }
             source_id = add_source(source_data)
+            print(f"Created new source with ID: {source_id}")
         else:
             raise HTTPException(status_code=400, detail="При добавлении нового источника все поля источника обязательны")
 
         # Обработка фото
+        print("Processing photo...")
         photo_content = await photo.read()
         photo_base64 = base64.b64encode(photo_content).decode()
 
         # Добавляем асану
+        print("Adding asana to ontology...")
         asana_id = add_asana(name_id=name_id, source_id=source_id, photo_base64=photo_base64)
+        print(f"Created new asana with ID: {asana_id}")
+        
         return {"message": "Asana added successfully", "id": asana_id}
 
     except Exception as e:
+        print(f"Error occurred: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/sources")
