@@ -1,21 +1,53 @@
-from fastapi import FastAPI, Request, Form, File, UploadFile, Depends, HTTPException
+from fastapi import FastAPI, Request, Form, File, UploadFile, HTTPException, Cookie
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from typing import Optional
 from app import api_client
+import logging
+from fastapi.security.utils import get_authorization_scheme_param
+
+# Настройка логирования
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger("asana_service.frontend.web")
 
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
-# Сессия по токену
+# Сессия по токену с использованием IP и User-Agent для дополнительной безопасности
 session_tokens = {}
+
+async def get_current_token(request: Request) -> Optional[str]:
+    """Получает текущий токен с учетом IP и User-Agent"""
+    client_id = f"{request.client.host}_{request.headers.get('user-agent', '')}"
+    token = session_tokens.get(client_id)
+    if token:
+        logger.debug(f"Found token for client {client_id[:30]}...")
+        return token
+    logger.debug(f"No token found for client {client_id[:30]}...")
+    return None
+
+async def set_token(request: Request, token: str):
+    """Сохраняет токен с учетом IP и User-Agent"""
+    client_id = f"{request.client.host}_{request.headers.get('user-agent', '')}"
+    session_tokens[client_id] = token
+    logger.info(f"Saved token for client {client_id[:30]}...")
+
+async def remove_token(request: Request):
+    """Удаляет токен"""
+    client_id = f"{request.client.host}_{request.headers.get('user-agent', '')}"
+    if client_id in session_tokens:
+        del session_tokens[client_id]
+        logger.info(f"Removed token for client {client_id[:30]}...")
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    token = session_tokens.get(request.client.host)
+    token = await get_current_token(request)
     if token:
         return RedirectResponse("/asanas")
     return RedirectResponse("/login")
@@ -30,7 +62,11 @@ async def login(request: Request):
     username = form_data.get("username")
     password = form_data.get("password")
     
+    logger.info(f"Login attempt from IP: {request.client.host}")
+    logger.debug(f"Username provided: {username}")
+    
     if not username or not password:
+        logger.warning("Missing username or password in login attempt")
         return templates.TemplateResponse(
             "login.html",
             {"request": request, "error": "Username and password are required"}
@@ -38,9 +74,11 @@ async def login(request: Request):
     
     try:
         token_data = await api_client.login(username, password)
-        session_tokens[request.client.host] = token_data["access_token"]
+        await set_token(request, token_data["access_token"])
+        logger.info(f"Successful login for user: {username}")
         return RedirectResponse("/asanas", status_code=303)
     except Exception as e:
+        logger.error(f"Login failed: {str(e)}")
         return templates.TemplateResponse(
             "login.html",
             {"request": request, "error": "Invalid username or password"}
@@ -48,64 +86,100 @@ async def login(request: Request):
 
 @app.get("/logout")
 async def logout(request: Request):
-    if request.client.host in session_tokens:
-        del session_tokens[request.client.host]
+    logger.info(f"Logout request from IP: {request.client.host}")
+    await remove_token(request)
     return RedirectResponse("/login", status_code=303)
 
 @app.get("/asanas", response_class=HTMLResponse)
 async def asanas_list(request: Request):
-    token = session_tokens.get(request.client.host)
+    token = await get_current_token(request)
     if not token:
+        logger.warning(f"Unauthorized access attempt to asanas from IP: {request.client.host}")
         return RedirectResponse("/login")
-    asanas = await api_client.get_asanas(token)
-    return templates.TemplateResponse("asana_list.html", {"request": request, "asanas": asanas})
+    
+    try:
+        logger.info("Fetching asanas list")
+        asanas = await api_client.get_asanas(token)
+        logger.info(f"Retrieved {len(asanas)} asanas")
+        return templates.TemplateResponse("asana_list.html", {"request": request, "asanas": asanas})
+    except Exception as e:
+        logger.error(f"Error fetching asanas: {str(e)}")
+        if "401" in str(e):
+            await remove_token(request)
+            return RedirectResponse("/login")
+        return templates.TemplateResponse("error.html", {
+            "request": request,
+            "error": "Failed to load asanas. Please try again later."
+        })
 
 @app.get("/asana/add", response_class=HTMLResponse)
 async def add_asana_page(request: Request):
-    token = session_tokens.get(request.client.host)
+    token = await get_current_token(request)
     if not token:
+        logger.warning(f"Unauthorized access attempt to add asana page from IP: {request.client.host}")
         return RedirectResponse("/login")
 
-    # НОВОЕ: получить существующие источники и названия
-    sources = await api_client.get_sources(token)
-    names = await api_client.get_names(token)
+    try:
+        logger.info("Loading add asana form data")
+        sources = await api_client.get_sources(token)
+        names = await api_client.get_names(token)
+        logger.debug(f"Loaded {len(sources)} sources and {len(names)} names")
 
-    return templates.TemplateResponse("add_asana.html", {
-        "request": request,
-        "sources": sources,
-        "names": names,
-    })
+        return templates.TemplateResponse("add_asana.html", {
+            "request": request,
+            "sources": sources,
+            "names": names,
+        })
+    except Exception as e:
+        logger.error(f"Error loading add asana form data: {str(e)}")
+        if "401" in str(e):
+            await remove_token(request)
+            return RedirectResponse("/login")
+        return templates.TemplateResponse("error.html", {
+            "request": request,
+            "error": "Failed to load form data. Please try again later."
+        })
 
 @app.post("/asana/add", response_class=HTMLResponse)
 async def add_asana(
     request: Request,
     selected_name: str = Form(...),
-    new_name_ru: Optional[str] = Form(default=None),
-    new_name_en: Optional[str] = Form(default=None),
-    new_name_sanskrit: Optional[str] = Form(default=None),
+    new_name_ru: Optional[str] = Form(None),
+    new_name_en: Optional[str] = Form(None),
+    new_name_sanskrit: Optional[str] = Form(None),
     selected_source: str = Form(...),
-    new_source_title: Optional[str] = Form(default=None),
-    new_source_author: Optional[str] = Form(default=None),
-    new_source_year: Optional[int] = Form(default=None),
+    new_source_title: Optional[str] = Form(None),
+    new_source_author: Optional[str] = Form(None),
+    new_source_year: Optional[int] = Form(None),
     photo: UploadFile = File(...)
 ):
-    token = session_tokens.get(request.client.host)
+    token = await get_current_token(request)
     if not token:
+        logger.warning(f"Unauthorized access attempt to add asana from IP: {request.client.host}")
         return RedirectResponse("/login")
 
     try:
-        # Читаем содержимое файла
-        photo_content = await photo.read()
-        
+        logger.info("Processing add asana form submission")
+        logger.debug(f"Form data - selected_name: {selected_name}, selected_source: {selected_source}")
+        logger.debug(f"New name data: ru={new_name_ru}, en={new_name_en}, sanskrit={new_name_sanskrit}")
+        logger.debug(f"New source data: title={new_source_title}, author={new_source_author}, year={new_source_year}")
+        logger.debug(f"Photo filename: {photo.filename}")
+
         # Validate form data
         if selected_name == "new" and not all([new_name_ru, new_name_en, new_name_sanskrit]):
+            logger.error("Missing required name fields for new name")
             raise ValueError("При добавлении нового названия все языковые поля обязательны")
             
         if selected_source == "new" and not all([new_source_title, new_source_author, new_source_year]):
+            logger.error("Missing required source fields for new source")
             raise ValueError("При добавлении нового источника все поля источника обязательны")
         
+        # Читаем содержимое файла
+        photo_content = await photo.read()
+        logger.debug(f"Read photo content, size: {len(photo_content)} bytes")
+        
         # Отправляем данные через API клиент
-        await api_client.add_asana(
+        result = await api_client.add_asana(
             selected_name=selected_name,
             new_name_ru=new_name_ru,
             new_name_en=new_name_en,
@@ -117,14 +191,25 @@ async def add_asana(
             photo=photo_content,
             token=token
         )
+        logger.info(f"Successfully added asana: {result}")
         return RedirectResponse("/asanas", status_code=303)
     except Exception as e:
+        logger.error(f"Error adding asana: {str(e)}")
+        if "401" in str(e):
+            await remove_token(request)
+            return RedirectResponse("/login")
         # В случае ошибки возвращаем на форму с сообщением об ошибке
-        sources = await api_client.get_sources(token)
-        names = await api_client.get_names(token)
-        return templates.TemplateResponse("add_asana.html", {
-            "request": request,
-            "sources": sources,
-            "names": names,
-            "error": str(e)
-        })
+        try:
+            sources = await api_client.get_sources(token)
+            names = await api_client.get_names(token)
+            return templates.TemplateResponse("add_asana.html", {
+                "request": request,
+                "sources": sources,
+                "names": names,
+                "error": str(e)
+            })
+        except:
+            return templates.TemplateResponse("error.html", {
+                "request": request,
+                "error": "An error occurred. Please try again later."
+            })

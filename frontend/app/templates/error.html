@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ошибка - Asana Service</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="error-box">
+            <h1>Произошла ошибка</h1>
+            <p class="error-message">{{ error }}</p>
+            <div class="buttons">
+                <a href="/" class="button">Вернуться на главную</a>
+                <a href="javascript:history.back()" class="button secondary">Назад</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -260,3 +260,38 @@ body {
 .mb-4 {
     margin-bottom: 2rem;
 }
+
+/* Error Page Styles */
+.error-box {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    margin: 2rem auto;
+    text-align: center;
+}
+
+.error-message {
+    color: #dc3545;
+    margin: 1rem 0;
+    padding: 1rem;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+}
+
+.buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.button.secondary {
+    background-color: #6c757d;
+}
+
+.button.secondary:hover {
+    background-color: #5a6268;
+}

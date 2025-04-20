@@ -8,7 +8,7 @@ services:
       - "8000:8000"
     restart: unless-stopped
     volumes:
-      - ./backend/ontology_updated.owl:/ontology_updated.owl
+      - ./backend/ontology_updated.owl:/app/ontology_updated.owl
 
   frontend:
     build: ./frontend
