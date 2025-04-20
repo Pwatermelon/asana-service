@@ -1,19 +1,73 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="/static/style.css">
-    <title>Add Asana</title>
-</head>
-<body>
-    <h1>Add New Asana</h1>
-    <form method="post" action="/asana/add" enctype="multipart/form-data">
-        <input type="text" name="name_ru" placeholder="Name in Russian" required/><br/>
-        <input type="text" name="name_en" placeholder="Name in English" required/><br/>
-        <input type="text" name="name_sanskrit" placeholder="Name in Sanskrit" required/><br/>
-        <input type="text" name="source" placeholder="Source" required/><br/>
-        <input type="file" name="photo" accept="image/*" required/><br/>
-        <button type="submit">Add</button>
-    </form>
-</body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+<h1>Добавить асану</h1>
+
+<form method="post" enctype="multipart/form-data">
+    <div>
+        <label>Название на русском:</label><br>
+        <select name="selected_name_ru" onchange="toggleNewField(this, 'new_name_ru')">
+            <option value="">-- Выберите --</option>
+            {% for name in names %}
+                <option value="{{ name.name_ru }}">{{ name.name_ru }}</option>
+            {% endfor %}
+            <option value="new">Добавить новое</option>
+        </select>
+        <input type="text" name="new_name_ru" id="new_name_ru" placeholder="Новое название (рус)" style="display:none; margin-top:5px;">
+    </div>
+
+    <div>
+        <label>Название на английском:</label><br>
+        <select name="selected_name_en" onchange="toggleNewField(this, 'new_name_en')">
+            <option value="">-- Выберите --</option>
+            {% for name in names %}
+                <option value="{{ name.name_en }}">{{ name.name_en }}</option>
+            {% endfor %}
+            <option value="new">Добавить новое</option>
+        </select>
+        <input type="text" name="new_name_en" id="new_name_en" placeholder="Новое название (англ)" style="display:none; margin-top:5px;">
+    </div>
+
+    <div>
+        <label>Название на санскрите:</label><br>
+        <select name="selected_name_sanskrit" onchange="toggleNewField(this, 'new_name_sanskrit')">
+            <option value="">-- Выберите --</option>
+            {% for name in names %}
+                <option value="{{ name.name_sanskrit }}">{{ name.name_sanskrit }}</option>
+            {% endfor %}
+            <option value="new">Добавить новое</option>
+        </select>
+        <input type="text" name="new_name_sanskrit" id="new_name_sanskrit" placeholder="Новое название (санскрит)" style="display:none; margin-top:5px;">
+    </div>
+
+    <div>
+        <label>Источник:</label><br>
+        <select name="selected_source" onchange="toggleNewField(this, 'new_source')">
+            <option value="">-- Выберите --</option>
+            {% for source in sources %}
+                <option value="{{ source.name }}">{{ source.name }}</option>
+            {% endfor %}
+            <option value="new">Добавить новый</option>
+        </select>
+        <input type="text" name="new_source" id="new_source" placeholder="Новый источник" style="display:none; margin-top:5px;">
+    </div>
+
+    <div>
+        <label>Фото:</label><br>
+        <input type="file" name="photo" required>
+    </div>
+
+    <button type="submit">Добавить асану</button>
+</form>
+
+<script>
+function toggleNewField(selectElement, inputId) {
+    var input = document.getElementById(inputId);
+    if (selectElement.value === "new") {
+        input.style.display = "block";
+    } else {
+        input.style.display = "none";
+    }
+}
+</script>
+
+{% endblock %}

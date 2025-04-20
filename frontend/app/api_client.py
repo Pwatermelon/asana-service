@@ -33,3 +33,16 @@ async def add_asana(name_ru: str, name_en: str, name_sanskrit: str, photo_base64
         response = await client.post(f"{BACKEND_URL}/asana", headers=headers, json=payload)
         response.raise_for_status()
         return response.json()
+async def get_sources(token: str):
+    headers = {"Authorization": f"Bearer {token}"}
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{BACKEND_URL}/sources", headers=headers)
+        response.raise_for_status()
+        return response.json()
+
+async def get_names(token: str):
+    headers = {"Authorization": f"Bearer {token}"}
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{BACKEND_URL}/names", headers=headers)
+        response.raise_for_status()
+        return response.json()
