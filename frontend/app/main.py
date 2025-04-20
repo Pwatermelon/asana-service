@@ -32,6 +32,12 @@ async def login(request: Request, username: str = Form(...), password: str = For
     except Exception as e:
         return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid login"})
 
+@app.get("/logout")
+async def logout(request: Request):
+    if request.client.host in session_tokens:
+        del session_tokens[request.client.host]
+    return RedirectResponse("/login", status_code=303)
+
 @app.get("/asanas", response_class=HTMLResponse)
 async def asanas_list(request: Request):
     token = session_tokens.get(request.client.host)
