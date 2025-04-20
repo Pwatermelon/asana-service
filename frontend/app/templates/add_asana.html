@@ -25,7 +25,7 @@
                 <!-- Name section -->
                 <div class="form-group">
                     <label class="form-label">Название асаны:</label>
-                    <select name="selected_name" id="existing_name" class="form-control" onchange="toggleNameFields(this.value)">
+                    <select name="selected_name" id="existing_name" class="form-control" onchange="toggleNameFields(this.value)" required>
                         <option value="">-- Выберите существующее название --</option>
                         {% for name in names %}
                             <option value="{{ name.id }}" 
@@ -41,15 +41,15 @@
                     <div id="new_name_fields" class="mt-4" style="display:none;">
                         <div class="form-group">
                             <label class="form-label">Название на русском:</label>
-                            <input type="text" name="new_name_ru" class="form-control" placeholder="Например: Поза лотоса">
+                            <input type="text" name="new_name_ru" class="form-control new-name-field" placeholder="Например: Поза лотоса">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Название на английском:</label>
-                            <input type="text" name="new_name_en" class="form-control" placeholder="Example: Lotus Pose">
+                            <input type="text" name="new_name_en" class="form-control new-name-field" placeholder="Example: Lotus Pose">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Название на санскрите:</label>
-                            <input type="text" name="new_name_sanskrit" class="form-control" placeholder="Example: Padmasana">
+                            <input type="text" name="new_name_sanskrit" class="form-control new-name-field" placeholder="Example: Padmasana">
                         </div>
                     </div>
                 </div>
@@ -57,7 +57,7 @@
                 <!-- Source section -->
                 <div class="form-group">
                     <label class="form-label">Источник:</label>
-                    <select name="selected_source" id="existing_source" class="form-control" onchange="toggleSourceFields(this.value)">
+                    <select name="selected_source" id="existing_source" class="form-control" onchange="toggleSourceFields(this.value)" required>
                         <option value="">-- Выберите источник --</option>
                         {% for source in sources %}
                             <option value="{{ source.id }}"
@@ -73,15 +73,15 @@
                     <div id="new_source_fields" class="mt-4" style="display:none;">
                         <div class="form-group">
                             <label class="form-label">Название источника:</label>
-                            <input type="text" name="new_source_title" class="form-control" placeholder="Название книги/источника">
+                            <input type="text" name="new_source_title" class="form-control new-source-field" placeholder="Название книги/источника">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Автор:</label>
-                            <input type="text" name="new_source_author" class="form-control" placeholder="Имя автора">
+                            <input type="text" name="new_source_author" class="form-control new-source-field" placeholder="Имя автора">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Год:</label>
-                            <input type="number" name="new_source_year" class="form-control" placeholder="Год публикации">
+                            <input type="number" name="new_source_year" class="form-control new-source-field" placeholder="Год публикации">
                         </div>
                     </div>
                 </div>
@@ -107,33 +107,37 @@
     <script>
     function toggleNameFields(value) {
         const newFields = document.getElementById('new_name_fields');
+        const newNameInputs = document.querySelectorAll('.new-name-field');
+        
         if (value === 'new') {
             newFields.style.display = 'block';
+            newNameInputs.forEach(input => {
+                input.required = true;
+            });
         } else {
             newFields.style.display = 'none';
-            if (value) {
-                const option = document.querySelector(`option[value="${value}"]`);
-                // You could use these values to populate hidden fields if needed
-                const nameRu = option.dataset.ru;
-                const nameEn = option.dataset.en;
-                const nameSanskrit = option.dataset.sanskrit;
-            }
+            newNameInputs.forEach(input => {
+                input.required = false;
+                input.value = '';
+            });
         }
     }
 
     function toggleSourceFields(value) {
         const newFields = document.getElementById('new_source_fields');
+        const newSourceInputs = document.querySelectorAll('.new-source-field');
+        
         if (value === 'new') {
             newFields.style.display = 'block';
+            newSourceInputs.forEach(input => {
+                input.required = true;
+            });
         } else {
             newFields.style.display = 'none';
-            if (value) {
-                const option = document.querySelector(`option[value="${value}"]`);
-                // You could use these values to populate hidden fields if needed
-                const title = option.dataset.title;
-                const author = option.dataset.author;
-                const year = option.dataset.year;
-            }
+            newSourceInputs.forEach(input => {
+                input.required = false;
+                input.value = '';
+            });
         }
     }
 

@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, Form, File, UploadFile, Depends
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from typing import Optional
 from app import api_client
 
 app = FastAPI()
@@ -66,13 +67,13 @@ async def add_asana_page(request: Request):
 async def add_asana(
     request: Request,
     selected_name: str = Form(...),
-    new_name_ru: str = Form(None),
-    new_name_en: str = Form(None),
-    new_name_sanskrit: str = Form(None),
+    new_name_ru: Optional[str] = Form(default=None),
+    new_name_en: Optional[str] = Form(default=None),
+    new_name_sanskrit: Optional[str] = Form(default=None),
     selected_source: str = Form(...),
-    new_source_title: str = Form(None),
-    new_source_author: str = Form(None),
-    new_source_year: str = Form(None),
+    new_source_title: Optional[str] = Form(default=None),
+    new_source_author: Optional[str] = Form(default=None),
+    new_source_year: Optional[int] = Form(default=None),
     photo: UploadFile = File(...)
 ):
     token = session_tokens.get(request.client.host)
@@ -82,6 +83,13 @@ async def add_asana(
     try:
         # Читаем содержимое файла
         photo_content = await photo.read()
+        
+        # Validate form data
+        if selected_name == "new" and not all([new_name_ru, new_name_en, new_name_sanskrit]):
+            raise ValueError("При добавлении нового названия все языковые поля обязательны")
+            
+        if selected_source == "new" and not all([new_source_title, new_source_author, new_source_year]):
+            raise ValueError("При добавлении нового источника все поля источника обязательны")
         
         # Отправляем данные через API клиент
         await api_client.add_asana(

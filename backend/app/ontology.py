@@ -1,6 +1,6 @@
 from rdflib import Graph, Namespace, URIRef, Literal, RDF
 from app import config
-from typing import Optional
+from typing import Optional, Dict, Any
 import uuid
 
 g = Graph()
@@ -72,12 +72,12 @@ def load_sources():
         })
     return sources
 
-def add_source(source_data):
+def add_source(source_data: Dict[str, Any]) -> str:
     source_uri = URIRef(f"{ASANA}source_{uuid.uuid4()}")
     g.add((source_uri, RDF.type, ASANA.AsanaSource))
-    g.add((source_uri, ASANA.sourseTitle, Literal(source_data.title)))
-    g.add((source_uri, ASANA.sourceAuthor, Literal(source_data.author)))
-    g.add((source_uri, ASANA.sourceYear, Literal(source_data.year)))
+    g.add((source_uri, ASANA.sourseTitle, Literal(source_data["title"])))
+    g.add((source_uri, ASANA.sourceAuthor, Literal(source_data["author"])))
+    g.add((source_uri, ASANA.sourceYear, Literal(source_data["year"])))
     g.serialize(destination=config.OWL_FILE_PATH, format="xml")
     return str(source_uri)
 
@@ -92,11 +92,11 @@ def load_asana_names():
         })
     return names
 
-def add_asana_name(name_data):
+def add_asana_name(name_data: Dict[str, str]) -> str:
     name_uri = URIRef(f"{ASANA}name_{uuid.uuid4()}")
     g.add((name_uri, RDF.type, ASANA.AsanaName))
-    g.add((name_uri, ASANA.nameInRussian, Literal(name_data.name_ru)))
-    g.add((name_uri, ASANA.nameInEnglish, Literal(name_data.name_en)))
-    g.add((name_uri, ASANA.nameInSanskrit, Literal(name_data.name_sanskrit)))
+    g.add((name_uri, ASANA.nameInRussian, Literal(name_data["name_ru"])))
+    g.add((name_uri, ASANA.nameInEnglish, Literal(name_data["name_en"])))
+    g.add((name_uri, ASANA.nameInSanskrit, Literal(name_data["name_sanskrit"])))
     g.serialize(destination=config.OWL_FILE_PATH, format="xml")
     return str(name_uri)

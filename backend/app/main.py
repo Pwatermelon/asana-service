@@ -43,52 +43,56 @@ async def get_asanas(user: str = Depends(get_current_user)):
 
 @app.post("/asana")
 async def post_asana(
-    selected_name: str = Form(None),
-    new_name_ru: str = Form(None),
-    new_name_en: str = Form(None),
-    new_name_sanskrit: str = Form(None),
-    selected_source: str = Form(None),
-    new_source_title: str = Form(None),
-    new_source_author: str = Form(None),
-    new_source_year: int = Form(None),
+    selected_name: str = Form(...),
+    new_name_ru: Optional[str] = Form(None),
+    new_name_en: Optional[str] = Form(None),
+    new_name_sanskrit: Optional[str] = Form(None),
+    selected_source: str = Form(...),
+    new_source_title: Optional[str] = Form(None),
+    new_source_author: Optional[str] = Form(None),
+    new_source_year: Optional[int] = Form(None),
     photo: UploadFile = File(...),
     user: str = Depends(get_current_user)
 ):
-    # Handle the name (either existing or new)
-    name_id = None
-    if selected_name and selected_name != "new":
-        name_id = selected_name
-    elif all([new_name_ru, new_name_en, new_name_sanskrit]):
-        name_data = AsanaNameCreate(
-            name_ru=new_name_ru,
-            name_en=new_name_en,
-            name_sanskrit=new_name_sanskrit
-        )
-        name_id = add_asana_name(name_data)
-    else:
-        raise HTTPException(status_code=400, detail="Either selected_name or all new name fields must be provided")
+    try:
+        # Обработка названия
+        name_id = None
+        if selected_name != "new":
+            name_id = selected_name
+        elif all([new_name_ru, new_name_en, new_name_sanskrit]):
+            name_data = {
+                "name_ru": new_name_ru,
+                "name_en": new_name_en,
+                "name_sanskrit": new_name_sanskrit
+            }
+            name_id = add_asana_name(name_data)
+        else:
+            raise HTTPException(status_code=400, detail="При добавлении нового названия все языковые поля обязательны")
 
-    # Handle the source (either existing or new)
-    source_id = None
-    if selected_source and selected_source != "new":
-        source_id = selected_source
-    elif all([new_source_title, new_source_author, new_source_year]):
-        source_data = SourceCreate(
-            title=new_source_title,
-            author=new_source_author,
-            year=new_source_year
-        )
-        source_id = add_source(source_data)
-    else:
-        raise HTTPException(status_code=400, detail="Either selected_source or all new source fields must be provided")
+        # Обработка источника
+        source_id = None
+        if selected_source != "new":
+            source_id = selected_source
+        elif all([new_source_title, new_source_author, new_source_year]):
+            source_data = {
+                "title": new_source_title,
+                "author": new_source_author,
+                "year": int(new_source_year)
+            }
+            source_id = add_source(source_data)
+        else:
+            raise HTTPException(status_code=400, detail="При добавлении нового источника все поля источника обязательны")
 
-    # Convert photo to base64
-    photo_content = await photo.read()
-    photo_base64 = base64.b64encode(photo_content).decode()
+        # Обработка фото
+        photo_content = await photo.read()
+        photo_base64 = base64.b64encode(photo_content).decode()
 
-    # Add the asana with the name and source
-    add_asana(name_id=name_id, source_id=source_id, photo_base64=photo_base64)
-    return {"message": "Asana added successfully"}
+        # Добавляем асану
+        asana_id = add_asana(name_id=name_id, source_id=source_id, photo_base64=photo_base64)
+        return {"message": "Asana added successfully", "id": asana_id}
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/sources")
 async def get_sources(user: str = Depends(get_current_user)):
