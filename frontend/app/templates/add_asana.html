@@ -22,6 +22,9 @@
             <h1 class="text-center">Добавление новой асаны</h1>
             
             <form method="post" enctype="multipart/form-data">
+                <!-- Hidden token field -->
+                <input type="hidden" name="token" value="{{ token }}">
+                
                 <!-- Name section -->
                 <div class="form-group">
                     <label class="form-label">Название асаны:</label>

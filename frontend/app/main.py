@@ -129,6 +129,7 @@ async def add_asana_page(request: Request):
             "request": request,
             "sources": sources,
             "names": names,
+            "token": token  # Добавляем токен в контекст шаблона
         })
     except Exception as e:
         logger.error(f"Error loading add asana form data: {str(e)}")
@@ -143,6 +144,7 @@ async def add_asana_page(request: Request):
 @app.post("/asana/add", response_class=HTMLResponse)
 async def add_asana(
     request: Request,
+    token: str = Form(...),  # Добавляем токен из формы
     selected_name: str = Form(...),
     new_name_ru: Optional[str] = Form(None),
     new_name_en: Optional[str] = Form(None),
@@ -153,9 +155,10 @@ async def add_asana(
     new_source_year: Optional[int] = Form(None),
     photo: UploadFile = File(...)
 ):
-    token = await get_current_token(request)
-    if not token:
-        logger.warning(f"Unauthorized access attempt to add asana from IP: {request.client.host}")
+    # Проверяем токен из формы
+    stored_token = await get_current_token(request)
+    if not stored_token or stored_token != token:
+        logger.warning(f"Token mismatch or unauthorized access attempt from IP: {request.client.host}")
         return RedirectResponse("/login")
 
     try:
@@ -206,7 +209,8 @@ async def add_asana(
                 "request": request,
                 "sources": sources,
                 "names": names,
-                "error": str(e)
+                "error": str(e),
+                "token": token  # Добавляем токен обратно в шаблон
             })
         except:
             return templates.TemplateResponse("error.html", {
