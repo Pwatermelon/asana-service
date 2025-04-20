@@ -24,7 +24,7 @@
                 </div>
             {% endif %}
 
-            <form method="post" action="/token" enctype="application/x-www-form-urlencoded">
+            <form method="post" action="/login" enctype="application/x-www-form-urlencoded">
                 <div class="form-group">
                     <label class="form-label">Имя пользователя</label>
                     <input type="text" name="username" class="form-control" required placeholder="Введите имя пользователя">
@@ -39,36 +39,5 @@
             </form>
         </div>
     </div>
-
-    <script>
-    document.querySelector('form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        const data = new URLSearchParams();
-        for (const [key, value] of formData) {
-            data.append(key, value);
-        }
-
-        try {
-            const response = await fetch('/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: data
-            });
-
-            if (response.redirected) {
-                window.location.href = response.url;
-            } else {
-                const error = await response.text();
-                location.reload();
-            }
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    });
-    </script>
 </body>
 </html>

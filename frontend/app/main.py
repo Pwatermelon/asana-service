@@ -144,29 +144,25 @@ async def add_asana_page(request: Request):
 @app.post("/asana/add", response_class=HTMLResponse)
 async def add_asana(
     request: Request,
-    token: str = Form(...),  # Добавляем токен из формы
+    token: str = Form(...),
     selected_name: str = Form(...),
+    selected_source: str = Form(...),
     new_name_ru: Optional[str] = Form(None),
     new_name_en: Optional[str] = Form(None),
     new_name_sanskrit: Optional[str] = Form(None),
-    selected_source: str = Form(...),
     new_source_title: Optional[str] = Form(None),
     new_source_author: Optional[str] = Form(None),
-    new_source_year: Optional[int] = Form(None),
+    new_source_year: Optional[str] = Form(None),
     photo: UploadFile = File(...)
 ):
-    # Проверяем токен из формы
-    stored_token = await get_current_token(request)
-    if not stored_token or stored_token != token:
-        logger.warning(f"Token mismatch or unauthorized access attempt from IP: {request.client.host}")
-        return RedirectResponse("/login")
-
     try:
-        logger.info("Processing add asana form submission")
-        logger.debug(f"Form data - selected_name: {selected_name}, selected_source: {selected_source}")
-        logger.debug(f"New name data: ru={new_name_ru}, en={new_name_en}, sanskrit={new_name_sanskrit}")
-        logger.debug(f"New source data: title={new_source_title}, author={new_source_author}, year={new_source_year}")
-        logger.debug(f"Photo filename: {photo.filename}")
+        # Отладочный вывод
+        logger.debug(f"Received form data - token: {token}, selected_name: {selected_name}, selected_source: {selected_source}")
+        
+        stored_token = await get_current_token(request)
+        if not stored_token or stored_token != token:
+            logger.warning(f"Token mismatch or unauthorized access attempt from IP: {request.client.host}")
+            return RedirectResponse("/login")
 
         # Validate form data
         if selected_name == "new" and not all([new_name_ru, new_name_en, new_name_sanskrit]):
@@ -176,8 +172,8 @@ async def add_asana(
         if selected_source == "new" and not all([new_source_title, new_source_author, new_source_year]):
             logger.error("Missing required source fields for new source")
             raise ValueError("При добавлении нового источника все поля источника обязательны")
-        
-        # Читаем содержимое файла
+
+        # Получаем содержимое файла
         photo_content = await photo.read()
         logger.debug(f"Read photo content, size: {len(photo_content)} bytes")
         
@@ -190,7 +186,7 @@ async def add_asana(
             selected_source=selected_source,
             new_source_title=new_source_title,
             new_source_author=new_source_author,
-            new_source_year=new_source_year,
+            new_source_year=new_source_year if new_source_year else None,
             photo=photo_content,
             token=token
         )
@@ -210,7 +206,7 @@ async def add_asana(
                 "sources": sources,
                 "names": names,
                 "error": str(e),
-                "token": token  # Добавляем токен обратно в шаблон
+                "token": token
             })
         except:
             return templates.TemplateResponse("error.html", {
