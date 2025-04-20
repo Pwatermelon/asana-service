@@ -1,8 +1,9 @@
 import httpx
 import os
 import logging
-from typing import Optional
+from typing import Optional, Dict
 import asyncio
+import aiohttp
 
 # Настройка логирования
 logging.basicConfig(
@@ -82,52 +83,55 @@ async def get_asanas(token: str):
         logger.error(f"Error fetching asanas: {str(e)}")
         raise
 
-async def add_asana(
-    selected_name: str = None,
-    new_name_ru: str = None,
-    new_name_en: str = None,
-    new_name_sanskrit: str = None,
-    selected_source: str = None,
-    new_source_title: str = None,
-    new_source_author: str = None,
-    new_source_year: str = None,
-    photo: bytes = None,
-    token: str = None
-):
-    logger.info("Starting to add new asana")
-    logger.debug(f"Parameters: selected_name={selected_name}, selected_source={selected_source}")
-    
-    files = {
-        "photo": ("image.png", photo, "image/png")
-    } if photo else None
-    
-    data = {
-        "selected_name": selected_name,
-        "new_name_ru": new_name_ru,
-        "new_name_en": new_name_en,
-        "new_name_sanskrit": new_name_sanskrit,
-        "selected_source": selected_source,
-        "new_source_title": new_source_title,
-        "new_source_author": new_source_author,
-        "new_source_year": new_source_year
+async def add_asana(selected_name, selected_source, new_name_ru, new_name_en, 
+                new_name_sanskrit, new_source_title, new_source_author, new_source_year, 
+                photo=None, token=None):
+    if not token:
+        raise ValueError("Token is required for authentication")
+
+    headers = {
+        "Authorization": f"Bearer {token}"
     }
     
-    # Удаляем None значения
-    data = {k: v for k, v in data.items() if v is not None}
+    # Prepare form data
+    form_data = aiohttp.FormData()
+    form_data.add_field("selected_name", selected_name)
+    form_data.add_field("selected_source", selected_source)
     
+    if new_name_ru:
+        form_data.add_field("new_name_ru", new_name_ru)
+    if new_name_en:
+        form_data.add_field("new_name_en", new_name_en)
+    if new_name_sanskrit:
+        form_data.add_field("new_name_sanskrit", new_name_sanskrit)
+    if new_source_title:
+        form_data.add_field("new_source_title", new_source_title)
+    if new_source_author:
+        form_data.add_field("new_source_author", new_source_author)
+    if new_source_year:
+        form_data.add_field("new_source_year", str(new_source_year))
+    
+    if photo:
+        form_data.add_field("photo", photo, filename="photo.jpg", content_type="image/jpeg")
+
     try:
-        response = await make_request(
-            "POST",
-            f"{BACKEND_URL}/asana",
-            headers={"Authorization": f"Bearer {token}"},
-            data=data,
-            files=files
-        )
-        logger.info(f"Successfully added asana: {response}")
-        return response
-    except Exception as e:
-        logger.error(f"Error adding asana: {str(e)}")
-        raise
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{BACKEND_URL}/asana",
+                headers=headers,
+                data=form_data
+            ) as response:
+                if response.status == 401:
+                    raise ValueError("Authentication token is invalid or expired")
+                
+                response_data = await response.json()
+                if not response.ok:
+                    error_msg = response_data.get("detail", "Unknown error occurred")
+                    raise ValueError(f"API request failed: {error_msg}")
+                
+                return {"success": True, "data": response_data}
+    except aiohttp.ClientError as e:
+        raise ValueError(f"Failed to communicate with API: {str(e)}")
 
 async def get_sources(token: str):
     logger.info("Fetching sources list")
