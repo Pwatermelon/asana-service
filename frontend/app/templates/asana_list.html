@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/static/style.css">
+    <title>Asana Catalog</title>
+</head>
+<body>
+    <h1>Asanas</h1>
+    <a href="/asana/add">Add New Asana</a>
+    <ul>
+        {% for asana in asanas %}
+            <li>
+                <p>{{ asana.name }}</p>
+                {% if asana.photo %}
+                    <img src="data:image/png;base64,{{ asana.photo }}" alt="Asana photo" width="150"/>
+                {% endif %}
+                <p><i>{{ asana.source }}</i></p>
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

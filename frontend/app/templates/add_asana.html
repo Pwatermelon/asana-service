@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/static/style.css">
+    <title>Add Asana</title>
+</head>
+<body>
+    <h1>Add New Asana</h1>
+    <form method="post" action="/asana/add" enctype="multipart/form-data">
+        <input type="text" name="name_ru" placeholder="Name in Russian" required/><br/>
+        <input type="text" name="name_en" placeholder="Name in English" required/><br/>
+        <input type="text" name="name_sanskrit" placeholder="Name in Sanskrit" required/><br/>
+        <input type="text" name="source" placeholder="Source" required/><br/>
+        <input type="file" name="photo" accept="image/*" required/><br/>
+        <button type="submit">Add</button>
+    </form>
+</body>
+</html>
