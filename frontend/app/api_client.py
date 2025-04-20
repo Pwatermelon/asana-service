@@ -43,6 +43,6 @@ async def get_sources(token: str):
 async def get_names(token: str):
     headers = {"Authorization": f"Bearer {token}"}
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{BACKEND_URL}/names", headers=headers)
+        response = await client.get(f"{BACKEND_URL}/asana-names", headers=headers)
         response.raise_for_status()
         return response.json()
