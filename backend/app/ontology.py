@@ -83,14 +83,16 @@ def load_asanas():
             }
         
         photo_base64 = str(g.value(photo_obj, ASANA.base64Photo)) if photo_obj else ""
+        # Log only the length of the base64 data to avoid huge log files
+        logger.debug(f"Photo base64 length: {len(photo_base64)}")
         
         asana_data = {
             "id": str(asana),
             "name": name_data,
             "source": source_data,
-            "photo": photo_base64[:50] + "..." if photo_base64 else ""  # Логируем только начало base64
+            "photo": photo_base64  # Return the full base64 string
         }
-        logger.debug(f"Adding asana data: {asana_data}")
+        logger.debug(f"Adding asana with ID: {asana_data['id']}")
         asanas.append(asana_data)
     
     logger.info(f"Successfully loaded {len(asanas)} asanas")
