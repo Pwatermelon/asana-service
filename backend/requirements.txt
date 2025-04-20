@@ -6,3 +6,4 @@ passlib==1.7.4
 python-jose
 python-multipart
 rdflib
+pydantic>=2.0.0

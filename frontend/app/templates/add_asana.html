@@ -8,54 +8,70 @@
 <body>
     <h1>Add New Asana</h1>
     <form method="post" enctype="multipart/form-data">
-        <div>
-            <label>Название на русском:</label><br>
-            <select name="selected_name_ru" onchange="toggleNewField(this, 'new_name_ru')">
-                <option value="">-- Выберите --</option>
+        <!-- Name section -->
+        <div class="name-section">
+            <label>Название (Name):</label><br>
+            <select name="selected_name" id="existing_name" onchange="toggleNameFields(this.value)">
+                <option value="">-- Выберите существующее название --</option>
                 {% for name in names %}
-                    <option value="{{ name.name_ru }}">{{ name.name_ru }}</option>
+                    <option value="{{ name.id }}" 
+                            data-ru="{{ name.name_ru }}" 
+                            data-en="{{ name.name_en }}" 
+                            data-sanskrit="{{ name.name_sanskrit }}">
+                        {{ name.name_ru }} / {{ name.name_en }} / {{ name.name_sanskrit }}
+                    </option>
                 {% endfor %}
-                <option value="new">Добавить новое</option>
+                <option value="new">Добавить новое название</option>
             </select>
-            <input type="text" name="new_name_ru" id="new_name_ru" placeholder="Новое название (рус)" style="display:none; margin-top:5px;">
+
+            <div id="new_name_fields" style="display:none; margin-top:10px;">
+                <div>
+                    <label>Название на русском:</label><br>
+                    <input type="text" name="new_name_ru" placeholder="Новое название (рус)">
+                </div>
+                <div>
+                    <label>Название на английском:</label><br>
+                    <input type="text" name="new_name_en" placeholder="New name (eng)">
+                </div>
+                <div>
+                    <label>Название на санскрите:</label><br>
+                    <input type="text" name="new_name_sanskrit" placeholder="Sanskrit name">
+                </div>
+            </div>
         </div>
-    
-        <div>
-            <label>Название на английском:</label><br>
-            <select name="selected_name_en" onchange="toggleNewField(this, 'new_name_en')">
-                <option value="">-- Выберите --</option>
-                {% for name in names %}
-                    <option value="{{ name.name_en }}">{{ name.name_en }}</option>
-                {% endfor %}
-                <option value="new">Добавить новое</option>
-            </select>
-            <input type="text" name="new_name_en" id="new_name_en" placeholder="Новое название (англ)" style="display:none; margin-top:5px;">
-        </div>
-    
-        <div>
-            <label>Название на санскрите:</label><br>
-            <select name="selected_name_sanskrit" onchange="toggleNewField(this, 'new_name_sanskrit')">
-                <option value="">-- Выберите --</option>
-                {% for name in names %}
-                    <option value="{{ name.name_sanskrit }}">{{ name.name_sanskrit }}</option>
-                {% endfor %}
-                <option value="new">Добавить новое</option>
-            </select>
-            <input type="text" name="new_name_sanskrit" id="new_name_sanskrit" placeholder="Новое название (санскрит)" style="display:none; margin-top:5px;">
-        </div>
-    
-        <div>
-            <label>Источник:</label><br>
-            <select name="selected_source" onchange="toggleNewField(this, 'new_source')">
-                <option value="">-- Выберите --</option>
+
+        <!-- Source section -->
+        <div class="source-section">
+            <label>Источник (Source):</label><br>
+            <select name="selected_source" id="existing_source" onchange="toggleSourceFields(this.value)">
+                <option value="">-- Выберите источник --</option>
                 {% for source in sources %}
-                    <option value="{{ source.name }}">{{ source.name }}</option>
+                    <option value="{{ source.id }}"
+                            data-title="{{ source.title }}"
+                            data-author="{{ source.author }}"
+                            data-year="{{ source.year }}">
+                        {{ source.title }} ({{ source.author }}, {{ source.year }})
+                    </option>
                 {% endfor %}
-                <option value="new">Добавить новый</option>
+                <option value="new">Добавить новый источник</option>
             </select>
-            <input type="text" name="new_source" id="new_source" placeholder="Новый источник" style="display:none; margin-top:5px;">
+
+            <div id="new_source_fields" style="display:none; margin-top:10px;">
+                <div>
+                    <label>Название источника:</label><br>
+                    <input type="text" name="new_source_title" placeholder="Название книги/источника">
+                </div>
+                <div>
+                    <label>Автор:</label><br>
+                    <input type="text" name="new_source_author" placeholder="Имя автора">
+                </div>
+                <div>
+                    <label>Год:</label><br>
+                    <input type="number" name="new_source_year" placeholder="Год публикации">
+                </div>
+            </div>
         </div>
-    
+
         <div>
             <label>Фото:</label><br>
             <input type="file" name="photo" required>
@@ -65,12 +81,35 @@
     </form>
     
     <script>
-    function toggleNewField(selectElement, inputId) {
-        var input = document.getElementById(inputId);
-        if (selectElement.value === "new") {
-            input.style.display = "block";
+    function toggleNameFields(value) {
+        const newFields = document.getElementById('new_name_fields');
+        if (value === 'new') {
+            newFields.style.display = 'block';
         } else {
-            input.style.display = "none";
+            newFields.style.display = 'none';
+            if (value) {
+                const option = document.querySelector(`option[value="${value}"]`);
+                // You could use these values to populate hidden fields if needed
+                const nameRu = option.dataset.ru;
+                const nameEn = option.dataset.en;
+                const nameSanskrit = option.dataset.sanskrit;
+            }
+        }
+    }
+
+    function toggleSourceFields(value) {
+        const newFields = document.getElementById('new_source_fields');
+        if (value === 'new') {
+            newFields.style.display = 'block';
+        } else {
+            newFields.style.display = 'none';
+            if (value) {
+                const option = document.querySelector(`option[value="${value}"]`);
+                // You could use these values to populate hidden fields if needed
+                const title = option.dataset.title;
+                const author = option.dataset.author;
+                const year = option.dataset.year;
+            }
         }
     }
     </script>

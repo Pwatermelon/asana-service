@@ -15,3 +15,13 @@ class User(BaseModel):
 
 class UserInDB(User):
     hashed_password: str
+
+class AsanaName(BaseModel):
+    name_ru: str
+    name_en: str
+    name_sanskrit: str
+
+class AsanaSource(BaseModel):
+    author: str
+    year: int
+    title: str
