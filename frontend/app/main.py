@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Form, Depends
+from fastapi import FastAPI, Request, Form, File, UploadFile, Depends
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -63,28 +63,47 @@ async def add_asana_page(request: Request):
     })
 
 @app.post("/asana/add", response_class=HTMLResponse)
-async def add_asana(request: Request,
-                    selected_source: str = Form(...),
-                    new_source: str = Form(None),
-                    selected_name_ru: str = Form(...),
-                    new_name_ru: str = Form(None),
-                    selected_name_en: str = Form(...),
-                    new_name_en: str = Form(None),
-                    selected_name_sanskrit: str = Form(...),
-                    new_name_sanskrit: str = Form(None),
-                    photo: bytes = Form(...)):
+async def add_asana(
+    request: Request,
+    selected_name: str = Form(...),
+    new_name_ru: str = Form(None),
+    new_name_en: str = Form(None),
+    new_name_sanskrit: str = Form(None),
+    selected_source: str = Form(...),
+    new_source_title: str = Form(None),
+    new_source_author: str = Form(None),
+    new_source_year: str = Form(None),
+    photo: UploadFile = File(...)
+):
     token = session_tokens.get(request.client.host)
     if not token:
         return RedirectResponse("/login")
 
-    import base64
-    photo_base64 = base64.b64encode(photo).decode()
-
-    # Определяем что использовать: новое значение или выбранное
-    source = new_source if new_source else selected_source
-    name_ru = new_name_ru if new_name_ru else selected_name_ru
-    name_en = new_name_en if new_name_en else selected_name_en
-    name_sanskrit = new_name_sanskrit if new_name_sanskrit else selected_name_sanskrit
-
-    await api_client.add_asana(name_ru, name_en, name_sanskrit, photo_base64, source, token)
-    return RedirectResponse("/asanas", status_code=303)
+    try:
+        # Читаем содержимое файла
+        photo_content = await photo.read()
+        
+        # Отправляем данные через API клиент
+        await api_client.add_asana(
+            selected_name=selected_name,
+            new_name_ru=new_name_ru,
+            new_name_en=new_name_en,
+            new_name_sanskrit=new_name_sanskrit,
+            selected_source=selected_source,
+            new_source_title=new_source_title,
+            new_source_author=new_source_author,
+            new_source_year=new_source_year,
+            photo=photo_content,
+            token=token
+        )
+        return RedirectResponse("/asanas", status_code=303)
+    except Exception as e:
+        # В случае ошибки возвращаем на форму с сообщением об ошибке
+        sources = await api_client.get_sources(token)
+        names = await api_client.get_names(token)
+        return templates.TemplateResponse("add_asana.html", {
+            "request": request,
+            "sources": sources,
+            "names": names,
+            "error": str(e)
+        })

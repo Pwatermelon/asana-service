@@ -20,19 +20,51 @@ async def get_asanas(token: str):
         response.raise_for_status()
         return response.json()
 
-async def add_asana(name_ru: str, name_en: str, name_sanskrit: str, photo_base64: str, source: str, token: str):
-    headers = {"Authorization": f"Bearer {token}"}
-    payload = {
-        "name_ru": name_ru,
-        "name_en": name_en,
-        "name_sanskrit": name_sanskrit,
-        "photo_base64": photo_base64,
-        "source": source
+async def add_asana(
+    selected_name: str = None,
+    new_name_ru: str = None,
+    new_name_en: str = None,
+    new_name_sanskrit: str = None,
+    selected_source: str = None,
+    new_source_title: str = None,
+    new_source_author: str = None,
+    new_source_year: str = None,
+    photo: bytes = None,
+    token: str = None
+):
+    headers = {
+        "Authorization": f"Bearer {token}"
     }
+    
+    # Создаем multipart form data
+    files = {
+        "photo": ("image.png", photo, "image/png")
+    }
+    
+    data = {
+        "selected_name": selected_name if selected_name != "new" else None,
+        "new_name_ru": new_name_ru,
+        "new_name_en": new_name_en,
+        "new_name_sanskrit": new_name_sanskrit,
+        "selected_source": selected_source if selected_source != "new" else None,
+        "new_source_title": new_source_title,
+        "new_source_author": new_source_author,
+        "new_source_year": new_source_year
+    }
+    
+    # Удаляем None значения
+    data = {k: v for k, v in data.items() if v is not None}
+    
     async with httpx.AsyncClient() as client:
-        response = await client.post(f"{BACKEND_URL}/asana", headers=headers, json=payload)
+        response = await client.post(
+            f"{BACKEND_URL}/asana",
+            headers=headers,
+            data=data,
+            files=files
+        )
         response.raise_for_status()
         return response.json()
+
 async def get_sources(token: str):
     headers = {"Authorization": f"Bearer {token}"}
     async with httpx.AsyncClient() as client:
