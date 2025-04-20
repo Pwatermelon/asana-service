@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from app.auth import authenticate_user, create_access_token, get_current_user
-from app.ontology import load_asanas, add_asana
+from app.ontology import add_asana_name, add_source, load_asana_names, load_asanas, add_asana, load_sources
 from app.models import Token
 
 app = FastAPI()
