@@ -5,7 +5,10 @@ from pydantic import BaseModel
 import base64
 import logging
 from app.auth import authenticate_user, create_access_token, get_current_user
-from app.ontology import add_asana_name, add_source, load_asana_names, load_asanas, add_asana, load_sources
+from app.ontology import (
+    add_asana_name, add_source, load_asana_names, load_asanas, add_asana, load_sources,
+    delete_source_from_ontology, delete_asana_name_from_ontology
+)
 from app.config import logger
 
 # Create module logger
@@ -142,6 +145,22 @@ async def post_source(source: SourceCreate, user: str = Depends(get_current_user
     logger.info(f"Successfully added source with ID: {source_id}")
     return {"message": "Source added successfully", "id": source_id}
 
+@app.delete("/sources/{source_id}")
+async def delete_source(source_id: str, user: str = Depends(get_current_user)):
+    logger.info(f"Delete source request by user: {user}")
+    logger.debug(f"Source ID: {source_id}")
+    
+    try:
+        success = delete_source_from_ontology(source_id)
+        if not success:
+            logger.warning(f"Source {source_id} not found or could not be deleted")
+            raise HTTPException(status_code=404, detail="Source not found")
+        logger.info(f"Successfully deleted source {source_id}")
+        return {"message": "Source deleted successfully"}
+    except Exception as e:
+        logger.error(f"Error deleting source: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
 @app.get("/asana-names")
 async def get_asana_names(user: str = Depends(get_current_user)):
     logger.info(f"Getting asana names list for user: {user}")
@@ -158,3 +177,19 @@ async def post_asana_name(name: AsanaNameCreate, user: str = Depends(get_current
         raise HTTPException(status_code=400, detail="Asana name already exists or invalid")
     logger.info(f"Successfully added asana name with ID: {name_id}")
     return {"message": "Asana name added successfully", "id": name_id}
+
+@app.delete("/asana-names/{name_id}")
+async def delete_asana_name(name_id: str, user: str = Depends(get_current_user)):
+    logger.info(f"Delete asana name request by user: {user}")
+    logger.debug(f"Name ID: {name_id}")
+    
+    try:
+        success = delete_asana_name_from_ontology(name_id)
+        if not success:
+            logger.warning(f"Asana name {name_id} not found or could not be deleted")
+            raise HTTPException(status_code=404, detail="Asana name not found")
+        logger.info(f"Successfully deleted asana name {name_id}")
+        return {"message": "Asana name deleted successfully"}
+    except Exception as e:
+        logger.error(f"Error deleting asana name: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))

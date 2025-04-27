@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>Управление названиями</title>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="/" class="navbar-brand">Asana Каталог</a>
+            <div class="navbar-links">
+                <a href="/asanas" class="nav-link">Асаны</a>
+                <a href="/sources" class="nav-link">Источники</a>
+                <a href="/names" class="nav-link active">Названия</a>
+                <a href="/logout">Выйти</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="content-header">
+            <h1>Управление названиями асан</h1>
+            <button class="btn btn-primary" onclick="showAddNameModal()">Добавить название</button>
+        </div>
+
+        <div class="names-grid animate-fade-in">
+            {% for name in names %}
+                <div class="name-card">
+                    <div class="name-content">
+                        <h3>{{ name.name_sanskrit }}</h3>
+                        <p><strong>На русском:</strong> {{ name.name_ru }}</p>
+                        <p><strong>На английском:</strong> {{ name.name_en }}</p>
+                    </div>
+                    <div class="name-actions">
+                        <button class="btn btn-danger" onclick="deleteName('{{ name.id }}')">Удалить</button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Modal for adding new name -->
+    <div id="addNameModal" class="modal">
+        <div class="modal-content">
+            <h2>Добавить новое название</h2>
+            <form id="addNameForm" onsubmit="submitName(event)">
+                <div class="form-group">
+                    <label class="form-label">Название на санскрите:</label>
+                    <input type="text" name="name_sanskrit" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Название на русском:</label>
+                    <input type="text" name="name_ru" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Название на английском:</label>
+                    <input type="text" name="name_en" class="form-control" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="hideAddNameModal()">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function showAddNameModal() {
+            document.getElementById('addNameModal').style.display = 'flex';
+        }
+
+        function hideAddNameModal() {
+            document.getElementById('addNameModal').style.display = 'none';
+        }
+
+        async function submitName(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            try {
+                const response = await fetch('/asana-names', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name_sanskrit: formData.get('name_sanskrit'),
+                        name_ru: formData.get('name_ru'),
+                        name_en: formData.get('name_en')
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to add name');
+                }
+
+                window.location.reload();
+            } catch (error) {
+                alert('Ошибка при добавлении названия');
+            }
+        }
+
+        async function deleteName(nameId) {
+            if (!confirm('Вы уверены, что хотите удалить это название?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/asana-names/${nameId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete name');
+                }
+
+                window.location.reload();
+            } catch (error) {
+                alert('Ошибка при удалении названия');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -215,3 +215,93 @@ def add_asana_name(name_data: Dict[str, str]) -> str:
     except Exception as e:
         logger.error(f"Error adding asana name: {str(e)}", exc_info=True)
         raise
+
+def delete_source_from_ontology(source_id: str) -> bool:
+    """Delete a source and related asana photos from the ontology"""
+    try:
+        logger.info(f"Starting to delete source: {source_id}")
+        g = get_graph()
+        source_uri = URIRef(source_id)
+
+        # Check if source exists
+        if (source_uri, RDF.type, ASANA.AsanaSource) not in g:
+            logger.warning(f"Source {source_id} not found")
+            return False
+
+        # Find and delete all photos that use this source
+        photos_to_delete = []
+        for photo in g.subjects(ASANA.hasSource, source_uri):
+            photos_to_delete.append(photo)
+
+        # Find and delete all asanas that use these photos
+        asanas_to_delete = []
+        for photo in photos_to_delete:
+            for asana in g.subjects(ASANA.hasPhoto, photo):
+                asanas_to_delete.append(asana)
+
+        # Remove all related triples
+        for asana in asanas_to_delete:
+            g.remove((asana, None, None))
+            logger.debug(f"Removed asana: {asana}")
+
+        for photo in photos_to_delete:
+            g.remove((photo, None, None))
+            logger.debug(f"Removed photo: {photo}")
+
+        # Finally remove the source
+        g.remove((source_uri, None, None))
+        logger.debug(f"Removed source: {source_uri}")
+
+        # Save changes
+        g.serialize(destination=config.OWL_FILE_PATH, format="xml")
+        logger.info("Successfully saved changes to ontology")
+        return True
+
+    except Exception as e:
+        logger.error(f"Error deleting source from ontology: {str(e)}", exc_info=True)
+        raise
+
+def delete_asana_name_from_ontology(name_id: str) -> bool:
+    """Delete an asana name and related asanas from the ontology"""
+    try:
+        logger.info(f"Starting to delete asana name: {name_id}")
+        g = get_graph()
+        name_uri = URIRef(name_id)
+
+        # Check if name exists
+        if (name_uri, RDF.type, ASANA.AsanaName) not in g:
+            logger.warning(f"Asana name {name_id} not found")
+            return False
+
+        # Find and delete all asanas that use this name
+        asanas_to_delete = []
+        for asana in g.subjects(ASANA.hasName, name_uri):
+            asanas_to_delete.append(asana)
+
+        # Find and delete all photos used by these asanas
+        photos_to_delete = []
+        for asana in asanas_to_delete:
+            for photo in g.objects(asana, ASANA.hasPhoto):
+                photos_to_delete.append(photo)
+
+        # Remove all related triples
+        for asana in asanas_to_delete:
+            g.remove((asana, None, None))
+            logger.debug(f"Removed asana: {asana}")
+
+        for photo in photos_to_delete:
+            g.remove((photo, None, None))
+            logger.debug(f"Removed photo: {photo}")
+
+        # Finally remove the name
+        g.remove((name_uri, None, None))
+        logger.debug(f"Removed name: {name_uri}")
+
+        # Save changes
+        g.serialize(destination=config.OWL_FILE_PATH, format="xml")
+        logger.info("Successfully saved changes to ontology")
+        return True
+
+    except Exception as e:
+        logger.error(f"Error deleting asana name from ontology: {str(e)}", exc_info=True)
+        raise

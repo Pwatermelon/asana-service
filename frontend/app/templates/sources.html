@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>Управление источниками</title>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="/" class="navbar-brand">Asana Каталог</a>
+            <div class="navbar-links">
+                <a href="/asanas" class="nav-link">Асаны</a>
+                <a href="/sources" class="nav-link active">Источники</a>
+                <a href="/names" class="nav-link">Названия</a>
+                <a href="/logout">Выйти</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="content-header">
+            <h1>Управление источниками</h1>
+            <button class="btn btn-primary" onclick="showAddSourceModal()">Добавить источник</button>
+        </div>
+
+        <div class="sources-grid animate-fade-in">
+            {% for source in sources %}
+                <div class="source-card">
+                    <div class="source-content">
+                        <h3>{{ source.title }}</h3>
+                        <p><strong>Автор:</strong> {{ source.author }}</p>
+                        <p><strong>Год:</strong> {{ source.year }}</p>
+                    </div>
+                    <div class="source-actions">
+                        <button class="btn btn-danger" onclick="deleteSource('{{ source.id }}')">Удалить</button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Modal for adding new source -->
+    <div id="addSourceModal" class="modal">
+        <div class="modal-content">
+            <h2>Добавить новый источник</h2>
+            <form id="addSourceForm" onsubmit="submitSource(event)">
+                <div class="form-group">
+                    <label class="form-label">Название источника:</label>
+                    <input type="text" name="title" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Автор:</label>
+                    <input type="text" name="author" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Год:</label>
+                    <input type="number" name="year" class="form-control" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="hideAddSourceModal()">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function showAddSourceModal() {
+            document.getElementById('addSourceModal').style.display = 'flex';
+        }
+
+        function hideAddSourceModal() {
+            document.getElementById('addSourceModal').style.display = 'none';
+        }
+
+        async function submitSource(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            try {
+                const response = await fetch('/sources', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: formData.get('title'),
+                        author: formData.get('author'),
+                        year: parseInt(formData.get('year'))
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to add source');
+                }
+
+                window.location.reload();
+            } catch (error) {
+                alert('Ошибка при добавлении источника');
+            }
+        }
+
+        async function deleteSource(sourceId) {
+            if (!confirm('Вы уверены, что хотите удалить этот источник?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/sources/${sourceId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete source');
+                }
+
+                window.location.reload();
+            } catch (error) {
+                alert('Ошибка при удалении источника');
+            }
+        }
+    </script>
+</body>
+</html>

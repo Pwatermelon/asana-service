@@ -5,13 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <title>Asana Catalog</title>
+    <title>Asana Каталог</title>
 </head>
 <body>
     <nav class="navbar">
         <div class="navbar-content">
             <a href="/" class="navbar-brand">Asana Каталог</a>
             <div class="navbar-links">
+                <a href="/asanas" class="nav-link active">Асаны</a>
+                <a href="/sources" class="nav-link">Источники</a>
+                <a href="/names" class="nav-link">Названия</a>
                 <a href="/asana/add" class="btn btn-primary">Добавить асану</a>
                 <a href="/logout">Выйти</a>
             </div>
@@ -19,11 +22,14 @@
     </nav>
 
     <div class="container">
+        <div class="content-header">
+            <h1>Каталог асан</h1>
+        </div>
         <div class="card-grid animate-fade-in">
             {% for asana in asanas %}
                 <div class="card">
                     {% if asana.photo %}
-                        <img class="card-image" src="data:image/png;base64,{{ asana.photo }}" alt="Фото асаны"/>
+                        <img class="card-image" src="data:image/jpeg;base64,{{ asana.photo }}" alt="Фото асаны"/>
                     {% endif %}
                     <div class="card-content">
                         <h3 class="card-title">

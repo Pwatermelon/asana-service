@@ -160,3 +160,31 @@ async def get_names(token: str):
     except Exception as e:
         logger.error(f"Error fetching asana names: {str(e)}")
         raise
+
+async def delete_source(source_id: str, token: str):
+    logger.info(f"Deleting source with ID: {source_id}")
+    try:
+        response = await make_request(
+            "DELETE",
+            f"{BACKEND_URL}/sources/{source_id}",
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        logger.info("Successfully deleted source")
+        return response
+    except Exception as e:
+        logger.error(f"Error deleting source: {str(e)}")
+        raise
+
+async def delete_name(name_id: str, token: str):
+    logger.info(f"Deleting asana name with ID: {name_id}")
+    try:
+        response = await make_request(
+            "DELETE",
+            f"{BACKEND_URL}/asana-names/{name_id}",
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        logger.info("Successfully deleted asana name")
+        return response
+    except Exception as e:
+        logger.error(f"Error deleting asana name: {str(e)}")
+        raise
