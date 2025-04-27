@@ -3,7 +3,6 @@ import os
 import logging
 from typing import Optional, Dict
 import asyncio
-import aiohttp
 
 # Настройка логирования
 logging.basicConfig(
@@ -93,44 +92,47 @@ async def add_asana(selected_name, selected_source, new_name_ru, new_name_en,
         "Authorization": f"Bearer {token}"
     }
     
-    # Prepare form data
-    form_data = aiohttp.FormData()
-    form_data.add_field("selected_name", selected_name)
-    form_data.add_field("selected_source", selected_source)
+    # Prepare form data using httpx's Files and data
+    files = {}
+    data = {
+        "selected_name": selected_name,
+        "selected_source": selected_source
+    }
     
     if new_name_ru:
-        form_data.add_field("new_name_ru", new_name_ru)
+        data["new_name_ru"] = new_name_ru
     if new_name_en:
-        form_data.add_field("new_name_en", new_name_en)
+        data["new_name_en"] = new_name_en
     if new_name_sanskrit:
-        form_data.add_field("new_name_sanskrit", new_name_sanskrit)
+        data["new_name_sanskrit"] = new_name_sanskrit
     if new_source_title:
-        form_data.add_field("new_source_title", new_source_title)
+        data["new_source_title"] = new_source_title
     if new_source_author:
-        form_data.add_field("new_source_author", new_source_author)
+        data["new_source_author"] = new_source_author
     if new_source_year:
-        form_data.add_field("new_source_year", str(new_source_year))
+        data["new_source_year"] = str(new_source_year)
     
     if photo:
-        form_data.add_field("photo", photo, filename="photo.jpg", content_type="image/jpeg")
+        files["photo"] = ("photo.jpg", photo, "image/jpeg")
 
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
                 f"{BACKEND_URL}/asana",
                 headers=headers,
-                data=form_data
-            ) as response:
-                if response.status == 401:
-                    raise ValueError("Authentication token is invalid or expired")
-                
-                response_data = await response.json()
-                if not response.ok:
-                    error_msg = response_data.get("detail", "Unknown error occurred")
-                    raise ValueError(f"API request failed: {error_msg}")
-                
-                return {"success": True, "data": response_data}
-    except aiohttp.ClientError as e:
+                data=data,
+                files=files
+            )
+            if response.status_code == 401:
+                raise ValueError("Authentication token is invalid or expired")
+            
+            response_data = response.json()
+            if not response.is_success:
+                error_msg = response_data.get("detail", "Unknown error occurred")
+                raise ValueError(f"API request failed: {error_msg}")
+            
+            return {"success": True, "data": response_data}
+    except httpx.RequestError as e:
         raise ValueError(f"Failed to communicate with API: {str(e)}")
 
 async def get_sources(token: str):
