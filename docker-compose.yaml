@@ -9,6 +9,14 @@ services:
     restart: unless-stopped
     volumes:
       - ./backend/ontology_updated.owl:/app/ontology_updated.owl
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=asana_auth
+      - POSTGRES_USER=asana_user
+      - POSTGRES_PASSWORD=asana_pass
+    depends_on:
+      - postgres
 
   frontend:
     build: ./frontend
@@ -18,4 +26,19 @@ services:
     environment:
       - BACKEND_URL=http://backend:8000
     restart: unless-stopped
+
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: asana_auth
+      POSTGRES_USER: asana_user
+      POSTGRES_PASSWORD: asana_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
 

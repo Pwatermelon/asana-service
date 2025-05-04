@@ -19,3 +19,10 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger("asana_service")
+
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", 5432))
+POSTGRES_DB = os.getenv("POSTGRES_DB", "asana_auth")
+POSTGRES_USER = os.getenv("POSTGRES_USER", "asana_user")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "asana_pass")
+SQLALCHEMY_DATABASE_URL = f"postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"

@@ -5,35 +5,35 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from app import config
-from app.models import TokenData
+from app.models import TokenData, User
 import logging
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
 
 logger = logging.getLogger("asana_service.auth")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-fake_users_db = {
-    "admin": {
-        "username": "admin",
-        "hashed_password": pwd_context.hash("admin123"),
-    }
-}
+engine = create_engine(config.SQLALCHEMY_DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 def authenticate_user(username: str, password: str):
     logger.debug(f"Attempting to authenticate user: {username}")
-    user = fake_users_db.get(username)
+    db = SessionLocal()
+    user = db.query(User).filter(User.username == username).first()
+    db.close()
     if not user:
         logger.warning(f"User not found: {username}")
         return False
-    if not verify_password(password, user["hashed_password"]):
+    if not verify_password(password, user.password_hash):
         logger.warning(f"Invalid password for user: {username}")
         return False
     logger.info(f"Successfully authenticated user: {username}")
-    return user
+    return {"username": user.username}
 
 def create_access_token(data: dict):
     to_encode = data.copy()

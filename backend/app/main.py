@@ -12,6 +12,10 @@ from app.ontology import (
 from app.config import logger
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from app.models import Base, User
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from passlib.context import CryptContext
 
 # Create module logger
 logger = logging.getLogger("asana_service.api")
@@ -47,6 +51,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+engine = create_engine(config.SQLALCHEMY_DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base.metadata.create_all(bind=engine)
+
+# Создаём пользователя admin:admin123, если его нет
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def create_default_admin():
+    db = SessionLocal()
+    if not db.query(User).filter(User.username == "admin").first():
+        admin = User(username="admin", password_hash=pwd_context.hash("admin123"))
+        db.add(admin)
+        db.commit()
+    db.close()
+create_default_admin()
 
 @app.post("/token", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
