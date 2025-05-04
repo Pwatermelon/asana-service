@@ -4,6 +4,7 @@ from typing import Optional, Dict, Any
 import uuid
 import logging
 import os
+import base64
 
 logger = logging.getLogger("asana_service.ontology")
 
@@ -51,29 +52,23 @@ def load_asanas():
     logger.info("Starting to load asanas from graph")
     g = get_graph()
     asanas = []
-    
     all_asanas = list(g.subjects(RDF.type, ASANA.Asana))
     logger.info(f"Found {len(all_asanas)} asanas in graph")
-    
     for asana in all_asanas:
         logger.debug(f"Processing asana: {asana}")
         name_obj = g.value(asana, ASANA.hasName)
-        photo_obj = g.value(asana, ASANA.hasPhoto)
-        
+        photo_objs = list(g.objects(asana, ASANA.hasPhoto))
         logger.debug(f"Name object: {name_obj}")
-        logger.debug(f"Photo object: {photo_obj}")
-        
+        logger.debug(f"Photo objects: {photo_objs}")
         name_data = {
             "ru": str(g.value(name_obj, ASANA.nameInRussian)) if name_obj else "",
             "en": str(g.value(name_obj, ASANA.nameInEnglish)) if name_obj else "",
             "sanskrit": str(g.value(name_obj, ASANA.nameInSanskrit)) if name_obj else ""
         }
-        
         source_obj = None
-        if photo_obj:
-            source_obj = g.value(photo_obj, ASANA.hasSource)
+        if photo_objs:
+            source_obj = g.value(photo_objs[0], ASANA.hasSource)
             logger.debug(f"Source object: {source_obj}")
-        
         source_data = {}
         if source_obj:
             source_data = {
@@ -81,20 +76,17 @@ def load_asanas():
                 "author": str(g.value(source_obj, ASANA.sourceAuthor)),
                 "year": int(g.value(source_obj, ASANA.sourceYear))
             }
-        
-        photo_base64 = str(g.value(photo_obj, ASANA.base64Photo)) if photo_obj else ""
-        # Log only the length of the base64 data to avoid huge log files
-        logger.debug(f"Photo base64 length: {len(photo_base64)}")
-        
+        photos_base64 = [str(g.value(photo, ASANA.base64Photo)) for photo in photo_objs if g.value(photo, ASANA.base64Photo)]
+        logger.debug(f"Photos count: {len(photos_base64)}")
         asana_data = {
             "id": str(asana),
             "name": name_data,
             "source": source_data,
-            "photo": photo_base64  # Return the full base64 string
+            "photos": photos_base64,
+            "photo": photos_base64[0] if photos_base64 else ""
         }
         logger.debug(f"Adding asana with ID: {asana_data['id']}")
         asanas.append(asana_data)
-    
     logger.info(f"Successfully loaded {len(asanas)} asanas")
     return asanas
 
@@ -216,92 +208,93 @@ def add_asana_name(name_data: Dict[str, str]) -> str:
         logger.error(f"Error adding asana name: {str(e)}", exc_info=True)
         raise
 
-def delete_source_from_ontology(source_id: str) -> bool:
-    """Delete a source and related asana photos from the ontology"""
+def delete_any_by_uri(uri: str) -> bool:
     try:
-        logger.info(f"Starting to delete source: {source_id}")
         g = get_graph()
-        source_uri = URIRef(source_id)
-
-        # Check if source exists
-        if (source_uri, RDF.type, ASANA.AsanaSource) not in g:
-            logger.warning(f"Source {source_id} not found")
+        obj_uri = URIRef(uri)
+        found = False
+        # Пробуем точное совпадение
+        if (obj_uri, None, None) in g or (None, None, obj_uri) in g:
+            found = True
+            g.remove((obj_uri, None, None))
+            g.remove((None, None, obj_uri))
+        else:
+            # Если не найдено — ищем по окончанию (UUID)
+            suffix = uri.split("_")[-1]
+            candidates = [s for s in g.subjects() if str(s).endswith(suffix)]
+            for cand in candidates:
+                g.remove((cand, None, None))
+                g.remove((None, None, cand))
+                found = True
+            # Если всё равно не найдено — ищем по подстроке UUID
+            if not found:
+                uuid_part = suffix
+                candidates = [s for s in g.subjects() if uuid_part in str(s)]
+                for cand in candidates:
+                    g.remove((cand, None, None))
+                    g.remove((None, None, cand))
+                    found = True
+        if not found:
+            print(f'НЕ НАЙДЕН В ГРАФЕ: {uri}')
             return False
-
-        # Find and delete all photos that use this source
-        photos_to_delete = []
-        for photo in g.subjects(ASANA.hasSource, source_uri):
-            photos_to_delete.append(photo)
-
-        # Find and delete all asanas that use these photos
-        asanas_to_delete = []
-        for photo in photos_to_delete:
-            for asana in g.subjects(ASANA.hasPhoto, photo):
-                asanas_to_delete.append(asana)
-
-        # Remove all related triples
-        for asana in asanas_to_delete:
-            g.remove((asana, None, None))
-            logger.debug(f"Removed asana: {asana}")
-
-        for photo in photos_to_delete:
-            g.remove((photo, None, None))
-            logger.debug(f"Removed photo: {photo}")
-
-        # Finally remove the source
-        g.remove((source_uri, None, None))
-        logger.debug(f"Removed source: {source_uri}")
-
-        # Save changes
         g.serialize(destination=config.OWL_FILE_PATH, format="xml")
-        logger.info("Successfully saved changes to ontology")
+        print(f'УДАЛЁН(Ы): {uri}')
         return True
-
     except Exception as e:
-        logger.error(f"Error deleting source from ontology: {str(e)}", exc_info=True)
+        print(f'ОШИБКА ПРИ УДАЛЕНИИ: {e}')
         raise
 
+def delete_source_from_ontology(source_id: str) -> bool:
+    return delete_any_by_uri(source_id)
+
 def delete_asana_name_from_ontology(name_id: str) -> bool:
-    """Delete an asana name and related asanas from the ontology"""
+    return delete_any_by_uri(name_id)
+
+def delete_asana_from_ontology(asana_id: str) -> bool:
     try:
-        logger.info(f"Starting to delete asana name: {name_id}")
         g = get_graph()
-        name_uri = URIRef(name_id)
-
-        # Check if name exists
-        if (name_uri, RDF.type, ASANA.AsanaName) not in g:
-            logger.warning(f"Asana name {name_id} not found")
-            return False
-
-        # Find and delete all asanas that use this name
-        asanas_to_delete = []
-        for asana in g.subjects(ASANA.hasName, name_uri):
-            asanas_to_delete.append(asana)
-
-        # Find and delete all photos used by these asanas
-        photos_to_delete = []
-        for asana in asanas_to_delete:
-            for photo in g.objects(asana, ASANA.hasPhoto):
-                photos_to_delete.append(photo)
-
-        # Remove all related triples
-        for asana in asanas_to_delete:
-            g.remove((asana, None, None))
-            logger.debug(f"Removed asana: {asana}")
-
-        for photo in photos_to_delete:
-            g.remove((photo, None, None))
-            logger.debug(f"Removed photo: {photo}")
-
-        # Finally remove the name
-        g.remove((name_uri, None, None))
-        logger.debug(f"Removed name: {name_uri}")
-
-        # Save changes
+        ASANA = Namespace("http://www.semanticweb.org/platinum_watermelon/ontologies/Asana#")
+        asana_uri = URIRef(asana_id)
+        # Если не найдено точное совпадение — ищем по UUID
+        if (asana_uri, None, None) not in g:
+            suffix = asana_id.split("_")[-1]
+            candidates = [s for s in g.subjects(RDF.type, ASANA.Asana) if str(s).endswith(suffix)]
+            if not candidates:
+                print(f'Асана не найдена: {asana_id}')
+                return False
+            asana_uri = candidates[0]
+        # Найти все связанные фото
+        photo_uris = list(g.objects(asana_uri, ASANA.hasPhoto))
+        for photo_uri in photo_uris:
+            # Удалить все триплеты, где фигурирует фото
+            g.remove((photo_uri, None, None))
+            g.remove((None, None, photo_uri))
+        # Удалить все триплеты, где фигурирует асана
+        g.remove((asana_uri, None, None))
+        g.remove((None, None, asana_uri))
         g.serialize(destination=config.OWL_FILE_PATH, format="xml")
-        logger.info("Successfully saved changes to ontology")
+        print(f'Удалена асана и связанные фото: {asana_id}')
         return True
-
     except Exception as e:
-        logger.error(f"Error deleting asana name from ontology: {str(e)}", exc_info=True)
+        print(f'ОШИБКА ПРИ УДАЛЕНИИ АСАНЫ: {e}')
+        raise
+
+def add_photo_to_asana(asana_id: str, photo_bytes: bytes):
+    try:
+        g = get_graph()
+        asana_uri = URIRef(asana_id)
+        # Если не найдено точное совпадение — ищем по UUID
+        if (asana_uri, None, None) not in g:
+            suffix = asana_id.split("_")[-1]
+            candidates = [s for s in g.subjects(RDF.type, ASANA.Asana) if str(s).endswith(suffix)]
+            if not candidates:
+                raise Exception("Асана не найдена")
+            asana_uri = candidates[0]
+        photo_base64 = base64.b64encode(photo_bytes).decode()
+        photo_uri = URIRef(f"{ASANA}photo_{uuid.uuid4()}")
+        g.add((photo_uri, RDF.type, ASANA.AsanaPhoto))
+        g.add((photo_uri, ASANA.base64Photo, Literal(photo_base64)))
+        g.add((asana_uri, ASANA.hasPhoto, photo_uri))
+        g.serialize(destination=config.OWL_FILE_PATH, format="xml")
+    except Exception as e:
         raise

@@ -3,6 +3,7 @@ import os
 import logging
 from typing import Optional, Dict
 import asyncio
+from urllib.parse import quote
 
 # Настройка логирования
 logging.basicConfig(
@@ -168,7 +169,7 @@ async def delete_source(source_id: str, token: str):
     try:
         response = await make_request(
             "DELETE",
-            f"{BACKEND_URL}/sources/{source_id}",
+            f"{BACKEND_URL}/delete-source?uri={quote(source_id)}",
             headers={"Authorization": f"Bearer {token}"}
         )
         logger.info("Successfully deleted source")
@@ -182,7 +183,7 @@ async def delete_name(name_id: str, token: str):
     try:
         response = await make_request(
             "DELETE",
-            f"{BACKEND_URL}/asana-names/{name_id}",
+            f"{BACKEND_URL}/delete-asana-name?uri={quote(name_id)}",
             headers={"Authorization": f"Bearer {token}"}
         )
         logger.info("Successfully deleted asana name")
@@ -190,3 +191,30 @@ async def delete_name(name_id: str, token: str):
     except Exception as e:
         logger.error(f"Error deleting asana name: {str(e)}")
         raise
+
+async def delete_asana(asana_id: str, token: str):
+    logger.info(f"Deleting asana with ID: {asana_id}")
+    try:
+        response = await make_request(
+            "DELETE",
+            f"{BACKEND_URL}/asanas?uri={quote(asana_id)}",
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        logger.info("Successfully deleted asana")
+        return response
+    except Exception as e:
+        logger.error(f"Error deleting asana: {str(e)}")
+        raise
+
+async def add_asana_photo(asana_id: str, photo: bytes, token: str):
+    logger.info(f"Добавление дополнительного фото для асаны: {asana_id}")
+    headers = {"Authorization": f"Bearer {token}"}
+    files = {"photo": ("photo.jpg", photo, "image/jpeg")}
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{BACKEND_URL}/asana/{quote(asana_id)}/add-photo",
+            headers=headers,
+            files=files
+        )
+        response.raise_for_status()
+        return response.json()

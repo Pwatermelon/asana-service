@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/style.css">
+    <title>Детали асаны</title>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="/" class="navbar-brand">Asana Каталог</a>
+            <div class="navbar-links">
+                <a href="/asanas" class="nav-link">Асаны</a>
+                <a href="/sources" class="nav-link">Источники</a>
+                <a href="/names" class="nav-link">Названия</a>
+                <a href="/logout">Выйти</a>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="content-header">
+            <h1>{{ asana.name.sanskrit or 'Асана' }}</h1>
+        </div>
+        <div class="asana-detail-card animate-fade-in">
+            {% if asana.photos and asana.photos|length > 0 %}
+                <div class="asana-photos">
+                    {% for photo in asana.photos %}
+                        <img class="asana-detail-image" src="data:image/jpeg;base64,{{ photo }}" alt="Фото асаны" style="margin-bottom: 1em;"/>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <div class="asana-detail-info">
+                <h2>Названия</h2>
+                <ul>
+                    {% if asana.name.sanskrit %}<li><b>Санскрит:</b> {{ asana.name.sanskrit }}</li>{% endif %}
+                    {% if asana.name.ru %}<li><b>Русский:</b> {{ asana.name.ru }}</li>{% endif %}
+                    {% if asana.name.en %}<li><b>English:</b> {{ asana.name.en }}</li>{% endif %}
+                </ul>
+                {% if asana.source %}
+                <h2>Источник</h2>
+                <p><b>{{ asana.source.title }}</b></p>
+                <p><em>{{ asana.source.author }}, {{ asana.source.year }}</em></p>
+                {% endif %}
+                <div class="asana-detail-actions">
+                    <a href="/asanas" class="btn btn-secondary">Назад</a>
+                    <button class="btn btn-danger" onclick="deleteAsana('{{ asana.id|e }}')">Удалить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    async function deleteAsana(asanaId) {
+        if (!confirm('Вы уверены, что хотите удалить эту асану?')) {
+            return;
+        }
+        try {
+            const response = await fetch(`/asanas?uri=${encodeURIComponent(asanaId)}`, {
+                method: 'DELETE'
+            });
+            if (!response.ok) {
+                throw new Error('Ошибка при удалении асаны');
+            }
+            window.location.href = '/asanas';
+        } catch (error) {
+            alert('Ошибка при удалении асаны');
+        }
+    }
+    </script>
+</body>
+</html> 

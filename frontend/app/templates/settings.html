@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>Настройки</title>
+    <style>
+    .navbar { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.03); padding: 0.7em 0; position: sticky; top: 0; z-index: 1000; }
+    .navbar-content { display: flex; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 2em; }
+    .navbar-brand { font-size: 1.6em; font-weight: 700; margin-right: 2em; color: #111; text-decoration: none; line-height: 1; }
+    .navbar-links { display: flex; gap: 1.5em; flex: 1; justify-content: center; }
+    .nav-link { color: #222; text-decoration: none; font-size: 1.08em; padding: 0.2em 0.5em; border-radius: 4px; transition: background 0.15s; }
+    .nav-link.active, .nav-link:hover { color: #2563eb; background: #f2f6ff; }
+    .navbar-actions { display: flex; align-items: center; gap: 0.7em; }
+    .btn-primary { background: #2563eb; color: #fff; border: none; border-radius: 6px; padding: 0.5em 1.2em; font-size: 1em; font-weight: 500; cursor: pointer; transition: background 0.15s; }
+    .btn-primary:hover { background: #1746a2; }
+    .btn-logout { background: #f3f4f6; color: #222; border: none; border-radius: 6px; padding: 0.5em 1.1em 0.5em 0.9em; font-size: 1em; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 0.4em; transition: background 0.15s; }
+    .btn-logout:hover { background: #e5e7eb; }
+    @media (max-width: 900px) { .navbar-content { flex-direction: column; align-items: flex-start; padding: 0 1em; } .navbar-links { justify-content: flex-start; } }
+    @media (max-width: 600px) { .navbar-content { padding: 0 0.5em; } .navbar-brand { font-size: 1.1em; margin-right: 1em; } }
+    footer { background: #111; color: #fff; text-align: center; padding: 1.2em 0 1em 0; font-size: 1em; position: fixed; left: 0; right: 0; bottom: 0; z-index: 100; letter-spacing: 0.02em; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="/" class="navbar-brand">Asana<br>Каталог</a>
+            <div class="navbar-links">
+                <a href="/asanas" class="nav-link">Асаны</a>
+                <a href="/sources" class="nav-link">Источники</a>
+                <a href="/names" class="nav-link">Названия</a>
+                <a href="/settings" class="nav-link active">Настройки</a>
+            </div>
+            <div class="navbar-actions">
+                <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="content-header">
+            <h1>Настройки</h1>
+        </div>
+        <div class="settings-block">
+            <h2>Выгрузка онтологии</h2>
+            <a href="http://localhost:8000/download-ontology" class="btn btn-primary">Скачать файл онтологии</a>
+        </div>
+        <div class="settings-block" style="margin-top:2em;">
+            <h2>Загрузка онтологии</h2>
+            <form method="post" action="/upload-ontology" enctype="multipart/form-data">
+                <input type="file" name="ontology_file" accept=".owl,.rdf,.xml" required />
+                <button type="submit" class="btn btn-primary">Загрузить</button>
+            </form>
+        </div>
+    </div>
+    <footer>
+        © 2025 Platinum Watermelon
+    </footer>
+</body>
+</html> 

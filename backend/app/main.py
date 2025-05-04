@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Form, File, UploadFile
+from fastapi import FastAPI, Depends, HTTPException, status, Form, File, UploadFile, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Optional
 from pydantic import BaseModel
@@ -7,9 +7,11 @@ import logging
 from app.auth import authenticate_user, create_access_token, get_current_user
 from app.ontology import (
     add_asana_name, add_source, load_asana_names, load_asanas, add_asana, load_sources,
-    delete_source_from_ontology, delete_asana_name_from_ontology
+    delete_source_from_ontology, delete_asana_name_from_ontology, delete_asana_from_ontology, add_photo_to_asana
 )
 from app.config import logger
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 # Create module logger
 logger = logging.getLogger("asana_service.api")
@@ -36,6 +38,15 @@ class AsanaCreate(BaseModel):
     photo_base64: str
 
 app = FastAPI()
+
+# Разрешаем CORS для всех источников (для разработки)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post("/token", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
@@ -138,27 +149,26 @@ async def get_sources(user: str = Depends(get_current_user)):
 @app.post("/sources")
 async def post_source(source: SourceCreate, user: str = Depends(get_current_user)):
     logger.info(f"Adding new source by user: {user}")
-    source_id = add_source(source)
+    source_id = add_source(source.dict())
     if not source_id:
         logger.warning(f"Failed to add source: {source}")
         raise HTTPException(status_code=400, detail="Source already exists or invalid")
     logger.info(f"Successfully added source with ID: {source_id}")
     return {"message": "Source added successfully", "id": source_id}
 
-@app.delete("/sources/{source_id}")
-async def delete_source(source_id: str, user: str = Depends(get_current_user)):
-    logger.info(f"Delete source request by user: {user}")
-    logger.debug(f"Source ID: {source_id}")
-    
+@app.delete("/delete-source")
+@app.delete("/delete-source/")
+async def delete_source(user: str = Depends(get_current_user), uri: str = Query(...)):
+    print(f"[DEBUG] DELETE /delete-source — uri: {uri}")
     try:
-        success = delete_source_from_ontology(source_id)
+        success = delete_source_from_ontology(uri)
+        print(f"[DEBUG] Удаление источника: {success}")
         if not success:
-            logger.warning(f"Source {source_id} not found or could not be deleted")
+            print(f"[DEBUG] Источник не найден: {uri}")
             raise HTTPException(status_code=404, detail="Source not found")
-        logger.info(f"Successfully deleted source {source_id}")
         return {"message": "Source deleted successfully"}
     except Exception as e:
-        logger.error(f"Error deleting source: {str(e)}")
+        print(f"[DEBUG] Ошибка при удалении источника: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/asana-names")
@@ -171,25 +181,56 @@ async def get_asana_names(user: str = Depends(get_current_user)):
 @app.post("/asana-names")
 async def post_asana_name(name: AsanaNameCreate, user: str = Depends(get_current_user)):
     logger.info(f"Adding new asana name by user: {user}")
-    name_id = add_asana_name(name)
+    name_id = add_asana_name(name.dict())
     if not name_id:
         logger.warning(f"Failed to add asana name: {name}")
         raise HTTPException(status_code=400, detail="Asana name already exists or invalid")
     logger.info(f"Successfully added asana name with ID: {name_id}")
     return {"message": "Asana name added successfully", "id": name_id}
 
-@app.delete("/asana-names/{name_id}")
-async def delete_asana_name(name_id: str, user: str = Depends(get_current_user)):
-    logger.info(f"Delete asana name request by user: {user}")
-    logger.debug(f"Name ID: {name_id}")
-    
+@app.delete("/delete-asana-name")
+@app.delete("/delete-asana-name/")
+async def delete_asana_name(user: str = Depends(get_current_user), uri: str = Query(...)):
+    print(f"[DEBUG] DELETE /delete-asana-name — uri: {uri}")
     try:
-        success = delete_asana_name_from_ontology(name_id)
+        success = delete_asana_name_from_ontology(uri)
+        print(f"[DEBUG] Удаление названия: {success}")
         if not success:
-            logger.warning(f"Asana name {name_id} not found or could not be deleted")
+            print(f"[DEBUG] Название не найдено: {uri}")
             raise HTTPException(status_code=404, detail="Asana name not found")
-        logger.info(f"Successfully deleted asana name {name_id}")
         return {"message": "Asana name deleted successfully"}
     except Exception as e:
-        logger.error(f"Error deleting asana name: {str(e)}")
+        print(f"[DEBUG] Ошибка при удалении названия: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+
+@app.delete("/asanas")
+async def delete_asana(user: str = Depends(get_current_user), uri: str = Query(...)):
+    try:
+        success = delete_asana_from_ontology(uri)
+        if not success:
+            raise HTTPException(status_code=404, detail="Asana not found")
+        return {"message": "Asana deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/asana/{asana_id}/add-photo")
+async def add_asana_photo_backend(asana_id: str, photo: UploadFile = File(...), user: str = Depends(get_current_user)):
+    try:
+        photo_bytes = await photo.read()
+        add_photo_to_asana(asana_id, photo_bytes)
+        return {"message": "Фото добавлено"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/download-ontology")
+async def download_ontology():
+    """Позволяет скачать файл онтологии OWL"""
+    from app import config
+    import os
+    if not os.path.exists(config.OWL_FILE_PATH):
+        raise HTTPException(status_code=404, detail="Файл онтологии не найден")
+    return FileResponse(
+        path=config.OWL_FILE_PATH,
+        filename="asana_ontology.owl",
+        media_type="application/rdf+xml"
+    )
