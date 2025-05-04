@@ -57,11 +57,10 @@ async def set_token(response: Response, token: str):
         key="session_token",
         value=encrypted_token,
         httponly=True,
-        secure=True,
         samesite="lax",
         max_age=24 * 60 * 60
     )
-    logger.info("Saved token in secure cookie")
+    logger.info("Saved token in cookie (not secure)")
 
 async def remove_token(response: Response):
     """Remove token cookie"""

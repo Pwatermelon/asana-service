@@ -16,6 +16,7 @@ from app.models import Base, User
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from passlib.context import CryptContext
+from app import config
 
 # Create module logger
 logger = logging.getLogger("asana_service.api")
@@ -244,8 +245,6 @@ async def add_asana_photo_backend(asana_id: str, photo: UploadFile = File(...), 
 @app.get("/download-ontology")
 async def download_ontology():
     """Позволяет скачать файл онтологии OWL"""
-    from app import config
-    import os
     if not os.path.exists(config.OWL_FILE_PATH):
         raise HTTPException(status_code=404, detail="Файл онтологии не найден")
     return FileResponse(
