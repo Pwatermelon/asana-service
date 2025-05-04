@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from typing import Optional
 from pydantic import BaseModel
 import base64
+import os
 import logging
 from app.auth import authenticate_user, create_access_token, get_current_user
 from app.ontology import (
