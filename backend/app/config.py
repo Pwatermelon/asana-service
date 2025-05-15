@@ -20,9 +20,22 @@ logging.basicConfig(
 
 logger = logging.getLogger("asana_service")
 
+# База данных PostgreSQL
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
 POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", 5432))
 POSTGRES_DB = os.getenv("POSTGRES_DB", "asana_auth")
 POSTGRES_USER = os.getenv("POSTGRES_USER", "asana_user")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "asana_pass")
 SQLALCHEMY_DATABASE_URL = f"postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+
+# Настройки SMTP для отправки писем
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+SMTP_USER = os.getenv("SMTP_USER", "your_email@gmail.com")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "your_app_password")
+
+# Настройки приложения
+APP_NAME = "Каталог асан"
+APP_DESCRIPTION = "Каталог асан для йоги с возможностью поиска и фильтрации"
+APP_VERSION = "1.0.0"
+APP_CONTACT_EMAIL = SMTP_USER

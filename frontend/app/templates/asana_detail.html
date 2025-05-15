@@ -1,71 +1,431 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/style.css">
-    <title>Детали асаны</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>{{ asana.name.ru }} - Детали асаны</title>
+    <style>
+    body { font-family: 'Inter', sans-serif; line-height: 1.5; margin: 0; padding: 0; background: #f9fafb; color: #222; margin-bottom: 60px; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 1em 2em; }
+    
+    .navbar { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.03); padding: 0.7em 0; position: sticky; top: 0; z-index: 1000; }
+    .navbar-content { display: flex; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 2em; }
+    .navbar-brand { font-size: 1.6em; font-weight: 700; margin-right: 2em; color: #111; text-decoration: none; line-height: 1; }
+    .navbar-links { display: flex; gap: 1.5em; flex: 1; justify-content: center; }
+    .nav-link { color: #222; text-decoration: none; font-size: 1.08em; padding: 0.2em 0.5em; border-radius: 4px; transition: background 0.15s; }
+    .nav-link.active, .nav-link:hover { color: #2563eb; background: #f2f6ff; }
+    
+    .btn-primary { 
+        display: inline-block;
+        padding: 0.6em 1.2em;
+        background: #2563eb; 
+        color: #fff; 
+        border: none; 
+        border-radius: 6px; 
+        font-size: 0.9em; 
+        font-weight: 500; 
+        cursor: pointer; 
+        transition: background 0.15s;
+        text-decoration: none;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+    
+    .btn-logout {
+        display: inline-block;
+        padding: 0.6em 1.2em;
+        background: #f3f4f6;
+        color: #374151;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9em;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.15s;
+        text-decoration: none;
+        margin-left: 1em;
+    }
+    .btn-logout:hover { background: #e5e7eb; }
+    
+    .asana-detail {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        margin: 2em 0;
+        padding: 2em;
+        display: flex;
+        flex-direction: column;
+        gap: 2em;
+    }
+    
+    .asana-header {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 1em;
+    }
+    
+    .asana-title {
+        font-size: 2em;
+        font-weight: 600;
+        color: #111;
+        margin-bottom: 0.3em;
+    }
+    
+    .asana-subtitle {
+        color: #6b7280;
+        font-size: 1.2em;
+    }
+    
+    .asana-info {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2em;
+    }
+    
+    .asana-photos {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .main-photo {
+        height: 400px;
+        border-radius: 8px;
+        object-fit: cover;
+        margin-bottom: 1em;
+    }
+    
+    .photo-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 0.8em;
+    }
+    
+    .gallery-item {
+        height: 100px;
+        border-radius: 4px;
+        object-fit: cover;
+        cursor: pointer;
+        transition: transform 0.15s;
+    }
+    
+    .gallery-item:hover {
+        transform: scale(1.05);
+    }
+    
+    .asana-details {
+        padding: 1em;
+        background: #f9fafb;
+        border-radius: 8px;
+    }
+    
+    .detail-section {
+        margin-bottom: 1.5em;
+    }
+    
+    .detail-title {
+        font-size: 1.2em;
+        font-weight: 600;
+        color: #111;
+        margin-bottom: 0.5em;
+        padding-bottom: 0.3em;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .detail-item {
+        margin: 0.7em 0;
+    }
+    
+    .add-photo-form {
+        margin-top: 2em;
+        padding: 1.5em;
+        background: #f9fafb;
+        border-radius: 8px;
+    }
+    
+    .form-title {
+        font-size: 1.2em;
+        font-weight: 600;
+        margin-bottom: 1em;
+    }
+    
+    .form-group {
+        margin-bottom: 1em;
+    }
+    
+    .form-label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 0.5em;
+    }
+    
+    .form-select {
+        width: 100%;
+        padding: 0.7em;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 0.95em;
+    }
+    
+    .form-file {
+        width: 100%;
+        padding: 0.7em;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        background: white;
+    }
+    
+    .form-actions {
+        margin-top: 1.5em;
+    }
+    
+    footer { background: #111; color: #fff; text-align: center; padding: 1.2em 0 1em 0; font-size: 1em; position: fixed; left: 0; right: 0; bottom: 0; z-index: 100; letter-spacing: 0.02em; }
+    
+    @media (max-width: 768px) {
+        .asana-info {
+            grid-template-columns: 1fr;
+        }
+        
+        .navbar-links {
+            display: none;
+        }
+        
+        .main-photo {
+            height: 300px;
+        }
+    }
+    </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="navbar-content">
-            <a href="/" class="navbar-brand">Asana Каталог</a>
+            <a href="/" class="navbar-brand">Каталог<br>Асан</a>
             <div class="navbar-links">
                 <a href="/asanas" class="nav-link">Асаны</a>
                 <a href="/sources" class="nav-link">Источники</a>
-                <a href="/names" class="nav-link">Названия</a>
-                <a href="/logout">Выйти</a>
+                <a href="/about" class="nav-link">О проекте</a>
+                <a href="/expert-instructions" class="nav-link">Инструкции</a>
+                <a href="/settings" class="nav-link">Настройки</a>
+            </div>
+            <div class="navbar-actions" id="navbar-actions">
+                <!-- Динамически заполняется JavaScript -->
             </div>
         </div>
     </nav>
+    
     <div class="container">
-        <div class="content-header">
-            <h1>{{ asana.name.sanskrit or 'Асана' }}</h1>
-        </div>
-        <div class="asana-detail-card animate-fade-in">
-            {% if asana.photos and asana.photos|length > 0 %}
-                <div class="asana-photos">
-                    {% for photo in asana.photos %}
-                        <img class="asana-detail-image" src="data:image/jpeg;base64,{{ photo }}" alt="Фото асаны" style="margin-bottom: 1em;"/>
-                    {% endfor %}
-                </div>
-            {% endif %}
-            <div class="asana-detail-info">
-                <h2>Названия</h2>
-                <ul>
-                    {% if asana.name.sanskrit %}<li><b>Санскрит:</b> {{ asana.name.sanskrit }}</li>{% endif %}
-                    {% if asana.name.ru %}<li><b>Русский:</b> {{ asana.name.ru }}</li>{% endif %}
-                    {% if asana.name.en %}<li><b>English:</b> {{ asana.name.en }}</li>{% endif %}
-                </ul>
-                {% if asana.source %}
-                <h2>Источник</h2>
-                <p><b>{{ asana.source.title }}</b></p>
-                <p><em>{{ asana.source.author }}, {{ asana.source.year }}</em></p>
+        <div class="asana-detail">
+            <div class="asana-header">
+                <h1 class="asana-title">{{ asana.name.ru }}</h1>
+                {% if asana.name.sanskrit %}
+                    <div class="asana-subtitle">{{ asana.name.sanskrit }}</div>
                 {% endif %}
-                <div class="asana-detail-actions">
-                    <a href="/asanas" class="btn btn-secondary">Назад</a>
-                    <button class="btn btn-danger" onclick="deleteAsana('{{ asana.id|e }}')">Удалить</button>
+            </div>
+            
+            <div class="asana-info">
+                <div class="asana-photos">
+                    {% if asana.photos and asana.photos|length > 0 %}
+                        <img src="data:image/jpeg;base64,{{ asana.photos[0] }}" alt="{{ asana.name.ru }}" class="main-photo" id="main-photo">
+                        
+                        {% if asana.photos|length > 1 %}
+                            <div class="photo-gallery">
+                                {% for photo in asana.photos %}
+                                    <img src="data:image/jpeg;base64,{{ photo }}" alt="{{ asana.name.ru }}" class="gallery-item" onclick="changeMainPhoto(this)">
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="main-photo" style="background-color: #e5e7eb; display: flex; justify-content: center; align-items: center;">
+                            <p>Фото отсутствует</p>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="asana-details">
+                    <div class="detail-section">
+                        <h2 class="detail-title">Названия</h2>
+                        {% if asana.name.ru %}
+                            <div class="detail-item">
+                                <strong>Русское:</strong> {{ asana.name.ru }}
+                            </div>
+                        {% endif %}
+                        
+                        {% if asana.name.en %}
+                            <div class="detail-item">
+                                <strong>Английское:</strong> {{ asana.name.en }}
+                            </div>
+                        {% endif %}
+                        
+                        {% if asana.name.sanskrit %}
+                            <div class="detail-item">
+                                <strong>Санскрит:</strong> {{ asana.name.sanskrit }}
+                            </div>
+                        {% endif %}
+                        
+                        {% if asana.name.transliteration %}
+                            <div class="detail-item">
+                                <strong>Транслитерация:</strong> {{ asana.name.transliteration }}
+                            </div>
+                        {% endif %}
+                        
+                        {% if asana.name.translation %}
+                            <div class="detail-item">
+                                <strong>Перевод:</strong> {{ asana.name.translation }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if asana.source %}
+                        <div class="detail-section">
+                            <h2 class="detail-title">Источник</h2>
+                            <div class="detail-item">
+                                <strong>Название:</strong> {{ asana.source.title }}
+                            </div>
+                            <div class="detail-item">
+                                <strong>Автор:</strong> {{ asana.source.author }}
+                            </div>
+                            <div class="detail-item">
+                                <strong>Год:</strong> {{ asana.source.year }}
+                            </div>
+                            
+                            {% if asana.source.publisher %}
+                                <div class="detail-item">
+                                    <strong>Издательство:</strong> {{ asana.source.publisher }}
+                                </div>
+                            {% endif %}
+                            
+                            {% if asana.source.pages %}
+                                <div class="detail-item">
+                                    <strong>Страницы:</strong> {{ asana.source.pages }}
+                                </div>
+                            {% endif %}
+                            
+                            {% if asana.source.annotation %}
+                                <div class="detail-item">
+                                    <strong>Аннотация:</strong> {{ asana.source.annotation }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
                 </div>
             </div>
+            
+            {% if user_role in ['admin', 'expert'] %}
+                <div class="add-photo-form">
+                    <h3 class="form-title">Добавить новое фото</h3>
+                    <form id="add-photo-form" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="source_id" class="form-label">Источник:</label>
+                            <select id="source_id" name="source_id" class="form-select" required>
+                                <option value="">-- Выберите источник --</option>
+                                {% for source in sources %}
+                                    <option value="{{ source.id }}">{{ source.title }} ({{ source.author }}, {{ source.year }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="photo" class="form-label">Фото:</label>
+                            <input type="file" id="photo" name="photo" class="form-file" accept="image/*" required multiple>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">Добавить фото</button>
+                        </div>
+                    </form>
+                </div>
+            {% endif %}
         </div>
     </div>
+    
+    <footer>
+        © {{ year }} Каталог асан
+    </footer>
+    
     <script>
-    async function deleteAsana(asanaId) {
-        if (!confirm('Вы уверены, что хотите удалить эту асану?')) {
-            return;
-        }
-        try {
-            const response = await fetch(`/asanas?uri=${encodeURIComponent(asanaId)}`, {
-                method: 'DELETE'
-            });
-            if (!response.ok) {
-                throw new Error('Ошибка при удалении асаны');
+    // Добавление динамических элементов в навбар в зависимости от роли пользователя
+    function updateNavbar() {
+        const navbarActions = document.getElementById('navbar-actions');
+        const token = localStorage.getItem('token');
+        const userRole = localStorage.getItem('user_role');
+        
+        if (token) {
+            // Для экспертов и админов показываем дополнительные кнопки
+            if (userRole === 'admin' || userRole === 'expert') {
+                navbarActions.innerHTML = `
+                    <a href="/asana/add" class="btn-primary">Добавить асану</a>
+                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                `;
+            } else {
+                navbarActions.innerHTML = `
+                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                `;
             }
-            window.location.href = '/asanas';
-        } catch (error) {
-            alert('Ошибка при удалении асаны');
+        } else {
+            navbarActions.innerHTML = `
+                <a href="/login" class="btn-primary">Войти</a>
+            `;
         }
     }
+    
+    // Функция для смены главного фото
+    function changeMainPhoto(element) {
+        const mainPhoto = document.getElementById('main-photo');
+        mainPhoto.src = element.src;
+    }
+    
+    // Обработка отправки формы добавления фото
+    const addPhotoForm = document.getElementById('add-photo-form');
+    if (addPhotoForm) {
+        addPhotoForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const asanaId = '{{ asana.id }}';
+            const sourceId = document.getElementById('source_id').value;
+            if (!sourceId) {
+                alert('Выберите источник');
+                return;
+            }
+            // Проверка наличия фото
+            const resp = await fetch(`/asana/${asanaId}/photo-by-source/${sourceId}`);
+            const data = await resp.json();
+            if (data.photo) {
+                const img = document.createElement('img');
+                img.src = 'data:image/jpeg;base64,' + data.photo;
+                img.style.maxWidth = '200px';
+                img.style.display = 'block';
+                document.body.appendChild(img);
+                if (!confirm('Фото для этой асаны из этого источника уже есть. Хотите добавить другое?')) {
+                    img.remove();
+                    return;
+                }
+                img.remove();
+            }
+            // Отправка нескольких файлов
+            const formData = new FormData(this);
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`/asana/${asanaId}/add-photo`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                if (response.ok) {
+                    alert('Фото успешно добавлены');
+                    window.location.reload();
+                } else {
+                    const errorData = await response.json();
+                    alert(errorData.detail || 'Ошибка при добавлении фото');
+                }
+            } catch (error) {
+                alert('Ошибка при добавлении фото');
+            }
+        });
+    }
+    
+    // При загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        updateNavbar();
+    });
     </script>
 </body>
 </html> 

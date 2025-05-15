@@ -18,4 +18,5 @@ COPY . .
 RUN touch ontology_updated.owl && \
     chmod 666 ontology_updated.owl
 
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "app.main:app", "--bind", "0.0.0.0:8000", "--workers", "4", "--log-level", "debug"]
+# Запускаем через uvicorn напрямую
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

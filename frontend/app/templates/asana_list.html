@@ -1,222 +1,485 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <title>Asana Каталог</title>
+    <title>Каталог асан</title>
     <style>
-    .navbar {
-        background: #fff;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-        padding: 0.7em 0;
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-    }
-    .navbar-content {
-        display: flex;
-        align-items: center;
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 2em;
-    }
-    .navbar-brand {
-        font-size: 1.6em;
-        font-weight: 700;
-        margin-right: 2em;
-        color: #111;
+    body { font-family: 'Inter', sans-serif; line-height: 1.5; margin: 0; padding: 0; background: #f9fafb; color: #222; margin-bottom: 60px; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 1em 2em; }
+    
+    .navbar { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.03); padding: 0.7em 0; position: sticky; top: 0; z-index: 1000; }
+    .navbar-content { display: flex; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 2em; }
+    .navbar-brand { font-size: 1.6em; font-weight: 700; margin-right: 2em; color: #111; text-decoration: none; line-height: 1; }
+    .navbar-links { display: flex; gap: 1.5em; flex: 1; justify-content: center; }
+    .nav-link { color: #222; text-decoration: none; font-size: 1.08em; padding: 0.2em 0.5em; border-radius: 4px; transition: background 0.15s; }
+    .nav-link.active, .nav-link:hover { color: #2563eb; background: #f2f6ff; }
+    
+    .btn-primary { 
+        display: inline-block;
+        padding: 0.6em 1.2em;
+        background: #2563eb; 
+        color: #fff; 
+        border: none; 
+        border-radius: 6px; 
+        font-size: 0.9em; 
+        font-weight: 500; 
+        cursor: pointer; 
+        transition: background 0.15s;
         text-decoration: none;
-        line-height: 1;
     }
-    .navbar-links {
+    .btn-primary:hover { background: #1d4ed8; }
+    
+    .btn-logout {
+        display: inline-block;
+        padding: 0.6em 1.2em;
+        background: #f3f4f6;
+        color: #374151;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9em;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.15s;
+        text-decoration: none;
+        margin-left: 1em;
+    }
+    .btn-logout:hover { background: #e5e7eb; }
+    
+    .page-header { margin: 2em 0 1.5em 0; }
+    .page-title { font-size: 1.8em; margin-bottom: 0.5em; color: #111; }
+    .page-description { font-size: 1.05em; color: #4b5563; margin-bottom: 1.5em; }
+    
+    .asana-grid { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
+        gap: 1.5em; 
+        margin-top: 2em;
+    }
+    
+    .asana-card { 
+        background: white; 
+        border-radius: 8px; 
+        overflow: hidden; 
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        transition: transform 0.15s, box-shadow 0.15s;
+        height: 100%;
         display: flex;
-        gap: 1.5em;
+        flex-direction: column;
+    }
+    .asana-card:hover { 
+        transform: translateY(-2px); 
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+    
+    .asana-image { 
+        height: 200px; 
+        background-color: #f3f4f6; 
+        background-size: cover; 
+        background-position: center;
+    }
+    
+    .asana-content { 
+        padding: 1.2em; 
         flex: 1;
-        justify-content: center;
+        display: flex;
+        flex-direction: column;
     }
-    .nav-link {
-        color: #222;
-        text-decoration: none;
-        font-size: 1.08em;
-        padding: 0.2em 0.5em;
+    
+    .asana-title { 
+        font-size: 1.15em; 
+        font-weight: 600; 
+        margin-bottom: 0.7em;
+        color: #111;
+    }
+    
+    .asana-details { 
+        font-size: 0.9em; 
+        color: #6b7280;
+        margin-bottom: 1em;
+    }
+    
+    .asana-details p { 
+        margin: 0.3em 0; 
+    }
+    
+    .asana-actions {
+        margin-top: auto;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .btn-view {
+        display: inline-block;
+        padding: 0.4em 0.8em;
+        background: #f3f4f6;
+        color: #374151;
+        border: none;
         border-radius: 4px;
+        font-size: 0.9em;
+        text-decoration: none;
         transition: background 0.15s;
     }
-    .nav-link.active, .nav-link:hover {
-        color: #2563eb;
-        background: #f2f6ff;
+    .btn-view:hover { background: #e5e7eb; }
+    
+    .btn-delete {
+        display: inline-block;
+        padding: 0.4em 0.8em;
+        background: #fee2e2;
+        color: #b91c1c;
+        border: none;
+        border-radius: 4px;
+        font-size: 0.9em;
+        cursor: pointer;
+        transition: background 0.15s;
     }
-    .navbar-actions {
+    .btn-delete:hover { background: #fecaca; }
+    
+    .letter-section {
+        margin-bottom: 2em;
+    }
+    
+    .letter-heading {
+        font-size: 1.5em;
+        padding-bottom: 0.5em;
+        border-bottom: 1px solid #e5e7eb;
+        margin-bottom: 1em;
+        color: #1e3a8a;
+    }
+    
+    .no-asanas {
+        text-align: center;
+        padding: 3em 1em;
+        color: #6b7280;
+    }
+    
+    footer { background: #111; color: #fff; text-align: center; padding: 1.2em 0 1em 0; font-size: 1em; position: fixed; left: 0; right: 0; bottom: 0; z-index: 100; letter-spacing: 0.02em; }
+    
+    @media (max-width: 768px) {
+        .navbar-links { display: none; }
+        .asana-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    }
+    
+    .search-form-container {
+        margin: 1.5em 0;
+        background: white;
+        border-radius: 8px;
+        padding: 1.2em;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    .search-form {
         display: flex;
-        align-items: center;
-        gap: 0.7em;
+        flex-direction: column;
+        gap: 1em;
     }
-    .btn-primary {
+    
+    .search-input-container {
+        display: flex;
+        gap: 0.5em;
+    }
+    
+    .search-input {
+        flex: 1;
+        padding: 0.7em 1em;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 1em;
+    }
+    
+    .search-input:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+    
+    .search-button {
+        padding: 0.7em 1.5em;
         background: #2563eb;
         color: #fff;
         border: none;
         border-radius: 6px;
-        padding: 0.5em 1.2em;
-        font-size: 1em;
+        font-size: 0.95em;
         font-weight: 500;
         cursor: pointer;
         transition: background 0.15s;
     }
-    .btn-primary:hover {
-        background: #1746a2;
+    
+    .search-button:hover {
+        background: #1d4ed8;
     }
-    .btn-logout {
-        background: #f3f4f6;
-        color: #222;
-        border: none;
-        border-radius: 6px;
-        padding: 0.5em 1.1em 0.5em 0.9em;
-        font-size: 1em;
-        font-weight: 500;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 0.4em;
-        transition: background 0.15s;
-    }
-    .btn-logout:hover {
-        background: #e5e7eb;
-    }
-    .search-form {
-        display: flex;
-        align-items: center;
-        gap: 0.5em;
-        margin-right: 2em;
-    }
-    .search-form input {
-        border: 1px solid #e5e7eb;
-        border-radius: 6px;
-        padding: 0.4em 1em;
-        font-size: 1em;
-        width: 200px;
-    }
-    .search-form button {
-        padding: 0.4em 1.1em;
-        border-radius: 6px;
-        border: none;
-        background: #f3f4f6;
-        color: #222;
-        font-size: 1em;
-        cursor: pointer;
-        transition: background 0.15s;
-    }
-    .search-form button:hover {
-        background: #e5e7eb;
-    }
-    @media (max-width: 900px) {
-        .navbar-content { flex-direction: column; align-items: flex-start; padding: 0 1em; }
-        .navbar-links { justify-content: flex-start; }
-        .search-form { margin: 1em 0 0.5em 0; }
-    }
-    @media (max-width: 600px) {
-        .navbar-content { padding: 0 0.5em; }
-        .navbar-brand { font-size: 1.1em; margin-right: 1em; }
-        .search-form input { width: 120px; }
-    }
-    footer {
-        background: #111;
-        color: #fff;
-        text-align: center;
-        padding: 1.2em 0 1em 0;
-        font-size: 1em;
-        position: fixed;
-        left: 0; right: 0; bottom: 0;
-        z-index: 100;
-        letter-spacing: 0.02em;
+    
+    @media (max-width: 768px) {
+        .search-input-container {
+            flex-direction: column;
+        }
     }
     </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="navbar-content">
-            <a href="/" class="navbar-brand">Asana<br>Каталог</a>
+            <a href="/" class="navbar-brand">Каталог<br>Асан</a>
             <div class="navbar-links">
                 <a href="/asanas" class="nav-link active">Асаны</a>
                 <a href="/sources" class="nav-link">Источники</a>
-                <a href="/names" class="nav-link">Названия</a>
+                <a href="/about" class="nav-link">О проекте</a>
+                <a href="/expert-instructions" class="nav-link">Инструкции</a>
                 <a href="/settings" class="nav-link">Настройки</a>
             </div>
-            <form method="get" action="/asanas" class="search-form">
-                <input type="text" name="search" placeholder="Поиск по асанам..." value="{{ request.query_params.get('search', '') }}" />
-                <button type="submit">Поиск</button>
-            </form>
-            <div class="navbar-actions">
-                <a href="/asana/add" class="btn-primary">Добавить асану</a>
-                <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+            <div class="navbar-actions" id="navbar-actions">
+                <!-- Динамически заполняется JavaScript -->
             </div>
         </div>
     </nav>
-
+    
     <div class="container">
-        <div class="content-header">
-            <h1>Каталог асан</h1>
+        <div class="page-header">
+            <h1 class="page-title">Каталог асан</h1>
+            <p class="page-description">
+                Изучайте асаны из различных источников йоги с фотографиями и описаниями
+            </p>
+            
+            <!-- Форма поиска -->
+            <div class="search-form-container">
+                <form id="search-form" class="search-form">
+                    <div class="search-input-container">
+                        <input type="text" id="search-query" name="query" placeholder="Поиск асан..." value="{{ search_query|default('') }}" class="search-input">
+                        <button type="submit" class="search-button">Найти</button>
+                    </div>
+                </form>
+            </div>
         </div>
-        <div class="card-grid animate-fade-in">
-            {% for asana in asanas %}
-                <div class="card">
-                    {% if asana.photo %}
-                        <img class="card-image" src="data:image/jpeg;base64,{{ asana.photo }}" alt="Фото асаны"/>
-                    {% endif %}
-                    <div class="card-content">
-                        <h3 class="card-title">
-                            {% if asana.name.sanskrit %}
-                                {{ asana.name.sanskrit }}
-                            {% endif %}
-                        </h3>
-                        <div class="mb-4">
-                            {% if asana.name.ru %}
-                                <p><strong>Русское название:</strong> {{ asana.name.ru }}</p>
-                            {% endif %}
-                            {% if asana.name.en %}
-                                <p><strong>English name:</strong> {{ asana.name.en }}</p>
-                            {% endif %}
-                        </div>
-                        {% if asana.source %}
-                            <div class="source-info">
-                                <p><strong>Источник:</strong></p>
-                                <p>{{ asana.source.title }}</p>
-                                <p><em>{{ asana.source.author }}, {{ asana.source.year }}</em></p>
+        
+        <!-- Алфавитная навигация -->
+        {% include "alphabet_nav.html" %}
+        
+        {% if search_query %}
+            <!-- Если это результаты поиска -->
+            <div class="letter-section">
+                <h2 class="letter-heading">Результаты поиска: {{ search_query }}</h2>
+                
+                {% if asanas and asanas|length > 0 %}
+                    <div class="asana-grid">
+                        {% for asana in asanas %}
+                            <div class="asana-card">
+                                <div class="asana-image" style="background-image: url('data:image/jpeg;base64,{{ asana.photo }}')"></div>
+                                <div class="asana-content">
+                                    <h3 class="asana-title">{{ asana.name.ru }}</h3>
+                                    <div class="asana-details">
+                                        {% if asana.name.sanskrit %}
+                                            <p>Санскрит: {{ asana.name.sanskrit }}</p>
+                                        {% endif %}
+                                        {% if asana.name.en %}
+                                            <p>Английский: {{ asana.name.en }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="asana-actions">
+                                        <a href="/asana/{{ asana.id }}" class="btn-view">Подробнее</a>
+                                        {% if user_role in ['admin', 'expert'] %}
+                                            <button class="btn-delete delete-asana" data-id="{{ asana.id }}" data-name="{{ asana.name.ru }}">Удалить</button>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </div>
-                        {% endif %}
-                        <div class="card-actions">
-                            <a href="/asana?id={{ asana.id|urlencode }}" class="btn btn-secondary">Подробнее</a>
-                            <button class="btn btn-danger" onclick="deleteAsana('{{ asana.id|e }}')">Удалить</button>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-asanas">
+                        <p>По запросу "{{ search_query }}" асаны не найдены</p>
+                    </div>
+                {% endif %}
+            </div>
+        {% elif current_letter %}
+            <!-- Если выбрана конкретная буква -->
+            <div class="letter-section">
+                <h2 class="letter-heading">Асаны на букву {{ current_letter }}</h2>
+                
+                {% if asanas and asanas|length > 0 %}
+                    <div class="asana-grid">
+                        {% for asana in asanas %}
+                            <div class="asana-card">
+                                <div class="asana-image" style="background-image: url('data:image/jpeg;base64,{{ asana.photo }}')"></div>
+                                <div class="asana-content">
+                                    <h3 class="asana-title">{{ asana.name.ru }}</h3>
+                                    <div class="asana-details">
+                                        {% if asana.name.sanskrit %}
+                                            <p>Санскрит: {{ asana.name.sanskrit }}</p>
+                                        {% endif %}
+                                        {% if asana.name.en %}
+                                            <p>Английский: {{ asana.name.en }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="asana-actions">
+                                        <a href="/asana/{{ asana.id }}" class="btn-view">Подробнее</a>
+                                        {% if user_role in ['admin', 'expert'] %}
+                                            <button class="btn-delete delete-asana" data-id="{{ asana.id }}" data-name="{{ asana.name.ru }}">Удалить</button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-asanas">
+                        <p>Асаны на букву {{ current_letter }} не найдены</p>
+                    </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <!-- Если страница всех асан -->
+            {% if grouped_asanas %}
+                {% for letter, asanas in grouped_asanas %}
+                    <div class="letter-section" id="letter-{{ letter }}">
+                        <h2 class="letter-heading">{{ letter }}</h2>
+                        <div class="asana-grid">
+                            {% for asana in asanas %}
+                                <div class="asana-card">
+                                    <div class="asana-image" style="background-image: url('data:image/jpeg;base64,{{ asana.photo }}')"></div>
+                                    <div class="asana-content">
+                                        <h3 class="asana-title">{{ asana.name.ru }}</h3>
+                                        <div class="asana-details">
+                                            {% if asana.name.sanskrit %}
+                                                <p>Санскрит: {{ asana.name.sanskrit }}</p>
+                                            {% endif %}
+                                            {% if asana.name.en %}
+                                                <p>Английский: {{ asana.name.en }}</p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="asana-actions">
+                                            <a href="/asana/{{ asana.id }}" class="btn-view">Подробнее</a>
+                                            <button class="btn-delete delete-asana" data-id="{{ asana.id }}" data-name="{{ asana.name.ru }}">Удалить</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
                         </div>
                     </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-asanas">
+                    <p>Асаны в каталоге не найдены</p>
                 </div>
-            {% endfor %}
-        </div>
+            {% endif %}
+        {% endif %}
     </div>
-
+    
     <footer>
-        © 2025 Platinum Watermelon
+        © {{ year }} Каталог асан
     </footer>
-
+    
     <script>
-    async function deleteAsana(asanaId) {
-        alert('ID для удаления асаны: ' + asanaId);
-        if (!confirm('Вы уверены, что хотите удалить эту асану?')) {
-            return;
+    // Добавление динамических элементов в навбар в зависимости от роли пользователя
+    function updateNavbar() {
+        const navbarActions = document.getElementById('navbar-actions');
+        const token = localStorage.getItem('token');
+        const userRole = localStorage.getItem('user_role');
+        
+        if (token) {
+            // Для экспертов и админов показываем дополнительные кнопки
+            if (userRole === 'admin' || userRole === 'expert') {
+                navbarActions.innerHTML = `
+                    <a href="/asana/add" class="btn-primary">Добавить асану</a>
+                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                `;
+                
+                // Показываем кнопки удаления
+                showDeleteButtons();
+            } else {
+                navbarActions.innerHTML = `
+                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                `;
+                
+                // Скрываем кнопки удаления
+                hideDeleteButtons();
+            }
+        } else {
+            navbarActions.innerHTML = `
+                <a href="/login" class="btn-primary">Войти</a>
+            `;
+            
+            // Скрываем кнопки удаления
+            hideDeleteButtons();
         }
+    }
+    
+    // Показать/скрыть кнопки удаления
+    function showDeleteButtons() {
+        const deleteButtons = document.querySelectorAll('.delete-asana');
+        deleteButtons.forEach(button => {
+            button.style.display = 'inline-block';
+        });
+    }
+    
+    function hideDeleteButtons() {
+        const deleteButtons = document.querySelectorAll('.delete-asana');
+        deleteButtons.forEach(button => {
+            button.style.display = 'none';
+        });
+    }
+    
+    // Обработка удаления асаны
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('delete-asana')) {
+            const asanaId = e.target.dataset.id;
+            const asanaName = e.target.dataset.name;
+            
+            if (confirm(`Вы уверены, что хотите удалить асану "${asanaName}"?`)) {
+                deleteAsana(asanaId);
+            }
+        }
+    });
+    
+    async function deleteAsana(asanaId) {
+        const token = localStorage.getItem('token');
+        
         try {
             const response = await fetch(`/asanas?uri=${encodeURIComponent(asanaId)}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
-            if (!response.ok) {
-                throw new Error('Ошибка при удалении асаны');
+            
+            if (response.ok) {
+                // Удаляем карточку асаны из DOM
+                const asanaCard = document.querySelector(`.delete-asana[data-id="${asanaId}"]`).closest('.asana-card');
+                asanaCard.remove();
+                
+                alert('Асана успешно удалена');
+            } else {
+                alert('Ошибка при удалении асаны');
             }
-            window.location.reload();
         } catch (error) {
+            console.error('Error deleting asana:', error);
             alert('Ошибка при удалении асаны');
         }
     }
+    
+    // Обработка отправки формы поиска
+    document.getElementById('search-form')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const query = document.getElementById('search-query').value.trim();
+        
+        if (!query) {
+            return;
+        }
+        
+        // Создаем URL параметры
+        const searchParams = new URLSearchParams();
+        searchParams.append('query', query);
+        
+        // Переходим на страницу с результатами поиска
+        window.location.href = `/asanas?${searchParams.toString()}`;
+    });
+    
+    // При загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        updateNavbar();
+    });
     </script>
 </body>
 </html>

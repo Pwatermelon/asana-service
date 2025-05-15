@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>О проекте</title>
+    <style>
+    .navbar { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.03); padding: 0.7em 0; position: sticky; top: 0; z-index: 1000; }
+    .navbar-content { display: flex; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 2em; }
+    .navbar-brand { font-size: 1.6em; font-weight: 700; margin-right: 2em; color: #111; text-decoration: none; line-height: 1; }
+    .navbar-links { display: flex; gap: 1.5em; flex: 1; justify-content: center; }
+    .nav-link { color: #222; text-decoration: none; font-size: 1.08em; padding: 0.2em 0.5em; border-radius: 4px; transition: background 0.15s; }
+    .nav-link.active, .nav-link:hover { color: #2563eb; background: #f2f6ff; }
+    
+    .about-container { padding: 2em 0; max-width: 800px; margin: 0 auto; }
+    .about-title { font-size: 1.8em; margin-bottom: 1em; }
+    .about-content { 
+        background: white; 
+        padding: 2em; 
+        border-radius: 8px; 
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        line-height: 1.6;
+    }
+    
+    .btn-edit {
+        display: inline-block;
+        margin-top: 1em;
+        padding: 0.5em 1em;
+        background: #f3f4f6;
+        color: #374151;
+        border: none;
+        border-radius: 4px;
+        font-size: 0.9em;
+        cursor: pointer;
+        transition: background 0.15s;
+        text-decoration: none;
+    }
+    .btn-edit:hover { background: #e5e7eb; }
+    
+    .edit-form {
+        margin-top: 1.5em;
+        display: none;
+    }
+    
+    .edit-textarea {
+        width: 100%;
+        min-height: 300px;
+        padding: 1em;
+        border: 1px solid #d1d5db;
+        border-radius: 5px;
+        font-family: 'Inter', sans-serif;
+        margin-bottom: 1em;
+    }
+    
+    .btn-save {
+        padding: 0.5em 1em;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .btn-cancel {
+        padding: 0.5em 1em;
+        background: #f3f4f6;
+        color: #374151;
+        border: none;
+        border-radius: 4px;
+        margin-left: 0.5em;
+        cursor: pointer;
+    }
+
+    footer { background: #111; color: #fff; text-align: center; padding: 1.2em 0 1em 0; font-size: 1em; position: fixed; left: 0; right: 0; bottom: 0; z-index: 100; letter-spacing: 0.02em; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="/" class="navbar-brand">Каталог<br>Асан</a>
+            <div class="navbar-links">
+                <a href="/asanas" class="nav-link">Асаны</a>
+                <a href="/search" class="nav-link">Поиск</a>
+                <a href="/sources" class="nav-link">Источники</a>
+                <a href="/about" class="nav-link active">О проекте</a>
+                <a href="/settings" class="nav-link">Настройки</a>
+            </div>
+            <div class="navbar-actions" id="navbar-actions">
+                <!-- Динамически заполняется JavaScript -->
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="about-container">
+            <h1 class="about-title">О проекте</h1>
+            
+            <div class="about-content">
+                <div id="about-text">{{ content | safe }}</div>
+                
+                {% if user_role == 'admin' %}
+                    <div id="admin-controls">
+                        <button id="btn-edit" class="btn-edit">Редактировать</button>
+                        <div id="edit-form" class="edit-form">
+                            <textarea id="edit-content" class="edit-textarea">{{ content }}</textarea>
+                            <div>
+                                <button id="btn-save" class="btn-save">Сохранить</button>
+                                <button id="btn-cancel" class="btn-cancel">Отмена</button>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        © {{ year }} Каталог асан
+    </footer>
+    
+    <script>
+    // Добавление динамических элементов в навбар в зависимости от роли пользователя
+    function updateNavbar() {
+        const navbarActions = document.getElementById('navbar-actions');
+        const token = localStorage.getItem('token');
+        const userRole = localStorage.getItem('user_role');
+        
+        if (token) {
+            // Для экспертов и админов показываем дополнительные кнопки
+            if (userRole === 'admin' || userRole === 'expert') {
+                navbarActions.innerHTML = `
+                    <a href="/add-asana" class="btn-primary">Добавить асану</a>
+                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                `;
+            } else {
+                navbarActions.innerHTML = `
+                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                `;
+            }
+            
+            // Показываем элементы управления админу
+            if (userRole === 'admin') {
+                document.getElementById('admin-controls').style.display = 'block';
+            }
+        } else {
+            navbarActions.innerHTML = `
+                <a href="/login" class="btn-primary">Войти</a>
+            `;
+        }
+    }
+    
+    // Обработка редактирования
+    document.getElementById('btn-edit').addEventListener('click', function() {
+        document.getElementById('edit-form').style.display = 'block';
+    });
+    
+    document.getElementById('btn-cancel').addEventListener('click', function() {
+        document.getElementById('edit-form').style.display = 'none';
+    });
+    
+    document.getElementById('btn-save').addEventListener('click', async function() {
+        const token = localStorage.getItem('token');
+        const content = document.getElementById('edit-content').value;
+        
+        try {
+            const response = await fetch('/about-project', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ content })
+            });
+            
+            if (response.ok) {
+                // Обновляем контент на странице
+                document.getElementById('about-text').innerHTML = content;
+                document.getElementById('edit-form').style.display = 'none';
+                alert('Информация о проекте обновлена');
+            } else {
+                alert('Ошибка при сохранении');
+            }
+        } catch (error) {
+            console.error('Error saving content:', error);
+            alert('Ошибка при сохранении');
+        }
+    });
+    
+    // При загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        updateNavbar();
+    });
+    </script>
+</body>
+</html> 

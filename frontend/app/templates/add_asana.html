@@ -1,203 +1,551 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <title>Add Asana</title>
+    <title>Добавление асаны</title>
+    <style>
+    body { font-family: 'Inter', sans-serif; line-height: 1.5; margin: 0; padding: 0; background: #f9fafb; color: #222; margin-bottom: 60px; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 1em 2em; }
+    
+    .navbar { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.03); padding: 0.7em 0; position: sticky; top: 0; z-index: 1000; }
+    .navbar-content { display: flex; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 2em; }
+    .navbar-brand { font-size: 1.6em; font-weight: 700; margin-right: 2em; color: #111; text-decoration: none; line-height: 1; }
+    .navbar-links { display: flex; gap: 1.5em; flex: 1; justify-content: center; }
+    .nav-link { color: #222; text-decoration: none; font-size: 1.08em; padding: 0.2em 0.5em; border-radius: 4px; transition: background 0.15s; }
+    .nav-link.active, .nav-link:hover { color: #2563eb; background: #f2f6ff; }
+    
+    .btn-primary { 
+        display: inline-block;
+        padding: 0.6em 1.2em;
+        background: #2563eb; 
+        color: #fff; 
+        border: none; 
+        border-radius: 6px; 
+        font-size: 0.9em; 
+        font-weight: 500; 
+        cursor: pointer; 
+        transition: background 0.15s;
+        text-decoration: none;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+    
+    .btn-logout {
+        display: inline-block;
+        padding: 0.6em 1.2em;
+        background: #f3f4f6;
+        color: #374151;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9em;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.15s;
+        text-decoration: none;
+        margin-left: 1em;
+    }
+    .btn-logout:hover { background: #e5e7eb; }
+    
+    .page-header { margin: 2em 0 1.5em 0; }
+    .page-title { font-size: 1.8em; margin-bottom: 0.5em; color: #111; }
+    .page-description { font-size: 1.05em; color: #4b5563; margin-bottom: 1.5em; }
+    
+    .form-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        margin: 2em 0;
+        padding: 2em;
+    }
+    
+    .form-section {
+        margin-bottom: 2em;
+        padding-bottom: 1.5em;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .form-section-title {
+        font-size: 1.3em;
+        font-weight: 600;
+        margin-bottom: 1em;
+        color: #111;
+    }
+    
+    .form-group {
+        margin-bottom: 1.2em;
+    }
+    
+    .form-row {
+        display: flex;
+        gap: 1.5em;
+        margin-bottom: 1.2em;
+    }
+    
+    .form-row .form-group {
+        flex: 1;
+        margin-bottom: 0;
+    }
+    
+    .form-label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 0.5em;
+        color: #374151;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.7em;
+        font-size: 1em;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        background: #fff;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+    
+    .form-select {
+        width: 100%;
+        padding: 0.7em;
+        font-size: 1em;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        background: #fff;
+    }
+    
+    .form-select:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+    
+    .radio-group {
+        margin: 0.5em 0 1em 0;
+    }
+    
+    .radio-option {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.7em;
+    }
+    
+    .radio-option input[type="radio"] {
+        margin-right: 0.5em;
+    }
+    
+    .file-preview {
+        width: 100%;
+        height: 200px;
+        border: 1px dashed #d1d5db;
+        border-radius: 6px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 0.5em;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+    }
+    
+    .file-preview-text {
+        color: #6b7280;
+        font-size: 0.9em;
+    }
+    
+    .form-actions {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 2em;
+    }
+    
+    .btn-secondary {
+        display: inline-block;
+        padding: 0.6em 1.2em;
+        background: #f3f4f6;
+        color: #374151;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9em;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.15s;
+        text-decoration: none;
+    }
+    .btn-secondary:hover { background: #e5e7eb; }
+    
+    .error-message {
+        color: #b91c1c;
+        font-size: 0.9em;
+        margin-top: 0.5em;
+    }
+    
+    .conditional-section {
+        margin-top: 1em;
+        padding: 1em;
+        background: #f9fafb;
+        border-radius: 6px;
+        border-left: 3px solid #2563eb;
+    }
+    
+    footer { background: #111; color: #fff; text-align: center; padding: 1.2em 0 1em 0; font-size: 1em; position: fixed; left: 0; right: 0; bottom: 0; z-index: 100; letter-spacing: 0.02em; }
+    
+    @media (max-width: 768px) {
+        .form-row {
+            flex-direction: column;
+            gap: 1em;
+        }
+        
+        .navbar-links {
+            display: none;
+        }
+    }
+    </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="navbar-content">
-            <a href="/" class="navbar-brand">Asana Каталог</a>
+            <a href="/" class="navbar-brand">Каталог<br>Асан</a>
             <div class="navbar-links">
-                <a href="/">Назад к списку</a>
+                <a href="/asanas" class="nav-link">Асаны</a>
+                <a href="/sources" class="nav-link">Источники</a>
+                <a href="/about" class="nav-link">О проекте</a>
+                <a href="/expert-instructions" class="nav-link">Инструкции</a>
+                <a href="/settings" class="nav-link">Настройки</a>
+            </div>
+            <div class="navbar-actions" id="navbar-actions">
+                <!-- Динамически заполняется JavaScript -->
             </div>
         </div>
     </nav>
-
+    
     <div class="container">
-        <div class="form-container animate-fade-in">
-            <h1 class="text-center">Добавление новой асаны</h1>
-            
-            <form method="post" enctype="multipart/form-data">
-                <!-- Name section -->
-                <div class="form-group">
-                    <label class="form-label">Название асаны:</label>
-                    <select name="selected_name" id="existing_name" class="form-control" onchange="toggleNameFields(this.value)" required>
-                        <option value="">-- Выберите существующее название --</option>
-                        {% for name in names %}
-                            <option value="{{ name.id }}" 
-                                    data-ru="{{ name.name_ru }}" 
-                                    data-en="{{ name.name_en }}" 
-                                    data-sanskrit="{{ name.name_sanskrit }}">
-                                {{ name.name_ru }} / {{ name.name_en }} / {{ name.name_sanskrit }}
-                            </option>
-                        {% endfor %}
-                        <option value="new">Добавить новое название</option>
-                    </select>
-
-                    <div id="new_name_fields" class="mt-4" style="display:none;">
+        <div class="page-header">
+            <h1 class="page-title">Добавление новой асаны</h1>
+            <p class="page-description">
+                Заполните форму для добавления асаны в каталог
+            </p>
+        </div>
+        
+        <div class="form-container">
+            <form id="add-asana-form" enctype="multipart/form-data">
+                <div class="form-section">
+                    <h2 class="form-section-title">Название асаны</h2>
+                    
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="existing-name" name="name-option" value="existing" checked>
+                            <label for="existing-name">Выбрать существующее название</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="new-name" name="name-option" value="new">
+                            <label for="new-name">Добавить новое название</label>
+                        </div>
+                    </div>
+                    
+                    <div id="existing-name-section">
                         <div class="form-group">
-                            <label class="form-label">Название на русском:</label>
-                            <input type="text" name="new_name_ru" class="form-control new-name-field" placeholder="Например: Поза лотоса">
+                            <label for="selected_name" class="form-label">Выберите название:</label>
+                            <select id="selected_name" name="selected_name" class="form-select">
+                                <option value="">-- Выберите название --</option>
+                                {% for name in names %}
+                                    <option value="{{ name.id }}">{{ name.name_ru }}{% if name.name_sanskrit %} ({{ name.name_sanskrit }}){% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="new-name-section" style="display: none;" class="conditional-section">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="new_name_ru" class="form-label">Название на русском:</label>
+                                <input type="text" id="new_name_ru" name="new_name_ru" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="new_name_en" class="form-label">Название на английском:</label>
+                                <input type="text" id="new_name_en" name="new_name_en" class="form-control">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="new_name_sanskrit" class="form-label">Название на санскрите:</label>
+                                <input type="text" id="new_name_sanskrit" name="new_name_sanskrit" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="transliteration" class="form-label">Транслитерация:</label>
+                                <input type="text" id="transliteration" name="transliteration" class="form-control">
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Название на английском:</label>
-                            <input type="text" name="new_name_en" class="form-control new-name-field" placeholder="Example: Lotus Pose">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Название на санскрите:</label>
-                            <input type="text" name="new_name_sanskrit" class="form-control new-name-field" placeholder="Example: Padmasana">
+                            <label for="translation" class="form-label">Перевод:</label>
+                            <input type="text" id="translation" name="translation" class="form-control">
                         </div>
                     </div>
                 </div>
-
-                <!-- Source section -->
-                <div class="form-group">
-                    <label class="form-label">Источник:</label>
-                    <select name="selected_source" id="existing_source" class="form-control" onchange="toggleSourceFields(this.value)" required>
-                        <option value="">-- Выберите источник --</option>
-                        {% for source in sources %}
-                            <option value="{{ source.id }}"
-                                    data-title="{{ source.title }}"
-                                    data-author="{{ source.author }}"
-                                    data-year="{{ source.year }}">
-                                {{ source.title }} ({{ source.author }}, {{ source.year }})
-                            </option>
-                        {% endfor %}
-                        <option value="new">Добавить новый источник</option>
-                    </select>
-
-                    <div id="new_source_fields" class="mt-4" style="display:none;">
-                        <div class="form-group">
-                            <label class="form-label">Название источника:</label>
-                            <input type="text" name="new_source_title" class="form-control new-source-field" placeholder="Название книги/источника">
+                
+                <div class="form-section">
+                    <h2 class="form-section-title">Источник асаны</h2>
+                    
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="existing-source" name="source-option" value="existing" checked>
+                            <label for="existing-source">Выбрать существующий источник</label>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Автор:</label>
-                            <input type="text" name="new_source_author" class="form-control new-source-field" placeholder="Имя автора">
+                        <div class="radio-option">
+                            <input type="radio" id="new-source" name="source-option" value="new">
+                            <label for="new-source">Добавить новый источник</label>
                         </div>
+                    </div>
+                    
+                    <div id="existing-source-section">
                         <div class="form-group">
-                            <label class="form-label">Год:</label>
-                            <input type="number" name="new_source_year" class="form-control new-source-field" placeholder="Год публикации">
+                            <label for="selected_source" class="form-label">Выберите источник:</label>
+                            <select id="selected_source" name="selected_source" class="form-select">
+                                <option value="">-- Выберите источник --</option>
+                                {% for source in sources %}
+                                    <option value="{{ source.id }}">{{ source.title }} ({{ source.author }}, {{ source.year }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="new-source-section" style="display: none;" class="conditional-section">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="new_source_title" class="form-label">Название источника:</label>
+                                <input type="text" id="new_source_title" name="new_source_title" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="new_source_author" class="form-label">Автор:</label>
+                                <input type="text" id="new_source_author" name="new_source_author" class="form-control">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="new_source_year" class="form-label">Год издания:</label>
+                                <input type="number" id="new_source_year" name="new_source_year" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="new_source_publisher" class="form-label">Издательство:</label>
+                                <input type="text" id="new_source_publisher" name="new_source_publisher" class="form-control">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="new_source_pages" class="form-label">Количество страниц:</label>
+                                <input type="number" id="new_source_pages" name="new_source_pages" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="new_source_annotation" class="form-label">Аннотация:</label>
+                                <textarea id="new_source_annotation" name="new_source_annotation" class="form-control" rows="3"></textarea>
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Photo upload -->
-                <div class="form-group">
-                    <label class="form-label">Фотография асаны:</label>
-                    <div class="photo-upload-container" id="photoUploadContainer">
-                        <div class="photo-upload-icon">📸</div>
-                        <label class="photo-upload-label">
-                            <span id="uploadText">Нажмите или перетащите фото сюда</span>
-                            <input type="file" name="photo" accept="image/*" required id="photoInput">
-                        </label>
-                        <img id="photoPreview" class="photo-preview" alt="Preview">
+                
+                <div class="form-section">
+                    <h2 class="form-section-title">Фотография асаны</h2>
+                    
+                    <div class="form-group">
+                        <label for="photo" class="form-label">Загрузите фото:</label>
+                        <input type="file" id="photo" name="photo" class="form-control" accept="image/*" required>
+                        <div id="photo-preview" class="file-preview">
+                            <span class="file-preview-text">Предпросмотр фото появится здесь</span>
+                        </div>
                     </div>
                 </div>
-
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Добавить асану</button>
+                
+                <div class="form-actions">
+                    <a href="/asanas" class="btn-secondary">Отмена</a>
+                    <button type="submit" class="btn-primary">Добавить асану</button>
+                </div>
             </form>
         </div>
     </div>
-
+    
+    <footer>
+        © {{ year }} Каталог асан
+    </footer>
+    
     <script>
-    function toggleNameFields(value) {
-        const newFields = document.getElementById('new_name_fields');
-        const newNameInputs = document.querySelectorAll('.new-name-field');
+    // Добавление динамических элементов в навбар в зависимости от роли пользователя
+    function updateNavbar() {
+        const navbarActions = document.getElementById('navbar-actions');
+        const token = localStorage.getItem('token');
+        const userRole = localStorage.getItem('user_role');
         
-        if (value === 'new') {
-            newFields.style.display = 'block';
-            newNameInputs.forEach(input => {
-                input.required = true;
-            });
-        } else {
-            newFields.style.display = 'none';
-            newNameInputs.forEach(input => {
-                input.required = false;
-                input.value = '';
-            });
-        }
-    }
-
-    function toggleSourceFields(value) {
-        const newFields = document.getElementById('new_source_fields');
-        const newSourceInputs = document.querySelectorAll('.new-source-field');
-        
-        if (value === 'new') {
-            newFields.style.display = 'block';
-            newSourceInputs.forEach(input => {
-                input.required = true;
-            });
-        } else {
-            newFields.style.display = 'none';
-            newSourceInputs.forEach(input => {
-                input.required = false;
-                input.value = '';
-            });
-        }
-    }
-
-    // Photo upload preview
-    const photoInput = document.getElementById('photoInput');
-    const photoPreview = document.getElementById('photoPreview');
-    const uploadText = document.getElementById('uploadText');
-    const photoContainer = document.getElementById('photoUploadContainer');
-
-    photoInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                photoPreview.src = e.target.result;
-                photoPreview.style.display = 'block';
-                uploadText.textContent = 'Нажмите чтобы изменить фото';
+        if (token) {
+            // Для экспертов и админов показываем дополнительные кнопки
+            if (userRole === 'admin' || userRole === 'expert') {
+                navbarActions.innerHTML = `
+                    <a href="/asana/add" class="btn-primary">Добавить асану</a>
+                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                `;
+            } else {
+                navbarActions.innerHTML = `
+                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                `;
             }
-            reader.readAsDataURL(file);
-        }
-    });
-
-    // Drag and drop handling
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        photoContainer.addEventListener(eventName, preventDefaults, false);
-        document.body.addEventListener(eventName, preventDefaults, false);
-    });
-
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-        photoContainer.addEventListener(eventName, highlight, false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        photoContainer.addEventListener(eventName, unhighlight, false);
-    });
-
-    function highlight(e) {
-        photoContainer.classList.add('dragover');
-    }
-
-    function unhighlight(e) {
-        photoContainer.classList.remove('dragover');
-    }
-
-    photoContainer.addEventListener('drop', handleDrop, false);
-
-    function handleDrop(e) {
-        const dt = e.dataTransfer;
-        const file = dt.files[0];
-        if (file && file.type.startsWith('image/')) {
-            photoInput.files = dt.files;
-            const event = new Event('change');
-            photoInput.dispatchEvent(event);
+        } else {
+            navbarActions.innerHTML = `
+                <a href="/login" class="btn-primary">Войти</a>
+            `;
         }
     }
+    
+    // Функция для обработки переключения между существующим и новым названием
+    function handleNameOptionChange() {
+        const existingNameOption = document.getElementById('existing-name');
+        const existingNameSection = document.getElementById('existing-name-section');
+        const newNameSection = document.getElementById('new-name-section');
+        
+        if (existingNameOption.checked) {
+            existingNameSection.style.display = 'block';
+            newNameSection.style.display = 'none';
+        } else {
+            existingNameSection.style.display = 'none';
+            newNameSection.style.display = 'block';
+        }
+    }
+    
+    // Функция для обработки переключения между существующим и новым источником
+    function handleSourceOptionChange() {
+        const existingSourceOption = document.getElementById('existing-source');
+        const existingSourceSection = document.getElementById('existing-source-section');
+        const newSourceSection = document.getElementById('new-source-section');
+        
+        if (existingSourceOption.checked) {
+            existingSourceSection.style.display = 'block';
+            newSourceSection.style.display = 'none';
+        } else {
+            existingSourceSection.style.display = 'none';
+            newSourceSection.style.display = 'block';
+        }
+    }
+    
+    // Функция для предпросмотра фото
+    function handlePhotoPreview() {
+        const photoInput = document.getElementById('photo');
+        const photoPreview = document.getElementById('photo-preview');
+        
+        photoInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    photoPreview.style.backgroundImage = `url('${e.target.result}')`;
+                    photoPreview.innerHTML = '';
+                };
+                
+                reader.readAsDataURL(this.files[0]);
+            } else {
+                photoPreview.style.backgroundImage = '';
+                photoPreview.innerHTML = '<span class="file-preview-text">Предпросмотр фото появится здесь</span>';
+            }
+        });
+    }
+    
+    // Обработка отправки формы
+    function handleFormSubmit() {
+        const form = document.getElementById('add-asana-form');
+        
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const token = localStorage.getItem('token');
+            
+            // Определение выбранного названия
+            const nameOption = document.querySelector('input[name="name-option"]:checked').value;
+            if (nameOption === 'existing') {
+                formData.set('selected_name', document.getElementById('selected_name').value);
+                // Удаляем поля нового названия
+                formData.delete('new_name_ru');
+                formData.delete('new_name_en');
+                formData.delete('new_name_sanskrit');
+                formData.delete('transliteration');
+                formData.delete('translation');
+            } else {
+                formData.set('selected_name', 'new');
+            }
+            
+            // Определение выбранного источника
+            const sourceOption = document.querySelector('input[name="source-option"]:checked').value;
+            if (sourceOption === 'existing') {
+                formData.set('selected_source', document.getElementById('selected_source').value);
+                // Удаляем поля нового источника
+                formData.delete('new_source_title');
+                formData.delete('new_source_author');
+                formData.delete('new_source_year');
+                formData.delete('new_source_publisher');
+                formData.delete('new_source_pages');
+                formData.delete('new_source_annotation');
+            } else {
+                formData.set('selected_source', 'new');
+            }
+            
+            // Удаляем служебные поля
+            formData.delete('name-option');
+            formData.delete('source-option');
+            
+            try {
+                const response = await fetch('/asana', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    alert('Асана успешно добавлена!');
+                    window.location.href = '/asanas';
+                } else {
+                    const errorData = await response.json();
+                    alert(errorData.detail || 'Ошибка при добавлении асаны');
+                }
+            } catch (error) {
+                console.error('Error adding asana:', error);
+                alert('Ошибка при добавлении асаны');
+            }
+        });
+    }
+    
+    // Инициализация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        updateNavbar();
+        
+        // Инициализация обработчиков событий для радио-кнопок
+        document.querySelectorAll('input[name="name-option"]').forEach(function(radio) {
+            radio.addEventListener('change', handleNameOptionChange);
+        });
+        
+        document.querySelectorAll('input[name="source-option"]').forEach(function(radio) {
+            radio.addEventListener('change', handleSourceOptionChange);
+        });
+        
+        // Инициализация предпросмотра фото
+        handlePhotoPreview();
+        
+        // Инициализация обработчика отправки формы
+        handleFormSubmit();
+    });
+
+    document.getElementById('new_name_ru')?.addEventListener('blur', async function() {
+        const nameRu = this.value.trim();
+        if (!nameRu) return;
+        const resp = await fetch(`/asanas/search?query=${encodeURIComponent(nameRu)}`);
+        const data = await resp.json();
+        if (data.length > 0) {
+            alert('Асана с таким названием уже существует!');
+        }
+    });
     </script>
 </body>
 </html>

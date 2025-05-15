@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,55 +7,361 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <title>Настройки</title>
     <style>
+    body { font-family: 'Inter', sans-serif; line-height: 1.5; margin: 0; padding: 0; background: #f9fafb; color: #222; margin-bottom: 60px; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 1em 2em; }
+    
     .navbar { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.03); padding: 0.7em 0; position: sticky; top: 0; z-index: 1000; }
     .navbar-content { display: flex; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 2em; }
     .navbar-brand { font-size: 1.6em; font-weight: 700; margin-right: 2em; color: #111; text-decoration: none; line-height: 1; }
     .navbar-links { display: flex; gap: 1.5em; flex: 1; justify-content: center; }
     .nav-link { color: #222; text-decoration: none; font-size: 1.08em; padding: 0.2em 0.5em; border-radius: 4px; transition: background 0.15s; }
     .nav-link.active, .nav-link:hover { color: #2563eb; background: #f2f6ff; }
-    .navbar-actions { display: flex; align-items: center; gap: 0.7em; }
-    .btn-primary { background: #2563eb; color: #fff; border: none; border-radius: 6px; padding: 0.5em 1.2em; font-size: 1em; font-weight: 500; cursor: pointer; transition: background 0.15s; }
-    .btn-primary:hover { background: #1746a2; }
-    .btn-logout { background: #f3f4f6; color: #222; border: none; border-radius: 6px; padding: 0.5em 1.1em 0.5em 0.9em; font-size: 1em; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 0.4em; transition: background 0.15s; }
+    
+    .btn-primary { 
+        display: inline-block;
+        padding: 0.6em 1.2em;
+        background: #2563eb; 
+        color: #fff; 
+        border: none; 
+        border-radius: 6px; 
+        font-size: 0.9em; 
+        font-weight: 500; 
+        cursor: pointer; 
+        transition: background 0.15s;
+        text-decoration: none;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+    
+    .btn-logout {
+        display: inline-block;
+        padding: 0.6em 1.2em;
+        background: #f3f4f6;
+        color: #374151;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9em;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.15s;
+        text-decoration: none;
+        margin-left: 1em;
+    }
     .btn-logout:hover { background: #e5e7eb; }
-    @media (max-width: 900px) { .navbar-content { flex-direction: column; align-items: flex-start; padding: 0 1em; } .navbar-links { justify-content: flex-start; } }
-    @media (max-width: 600px) { .navbar-content { padding: 0 0.5em; } .navbar-brand { font-size: 1.1em; margin-right: 1em; } }
+    
+    .page-header { margin: 2em 0 1.5em 0; }
+    .page-title { font-size: 1.8em; margin-bottom: 0.5em; color: #111; }
+    .page-description { font-size: 1.05em; color: #4b5563; margin-bottom: 1.5em; }
+    
+    .settings-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        margin: 2em 0;
+        padding: 2em;
+    }
+    
+    .settings-section {
+        margin-bottom: 2em;
+        padding-bottom: 1.5em;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .settings-section:last-child {
+        border-bottom: none;
+    }
+    
+    .settings-title {
+        font-size: 1.3em;
+        font-weight: 600;
+        margin-bottom: 1em;
+        color: #111;
+    }
+    
+    .settings-description {
+        color: #6b7280;
+        margin-bottom: 1.2em;
+    }
+    
+    .form-group {
+        margin-bottom: 1.2em;
+    }
+    
+    .form-label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 0.5em;
+        color: #374151;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.7em;
+        font-size: 1em;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        background: #fff;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+    
+    .form-actions {
+        margin-top: 1.5em;
+    }
+    
+    .admin-only {
+        padding: 0.5em 1em;
+        background: #f3f4f6;
+        border-left: 3px solid #2563eb;
+        border-radius: 4px;
+        margin-bottom: 1.5em;
+    }
+    
+    .admin-only-label {
+        color: #2563eb;
+        font-weight: 500;
+        font-size: 0.9em;
+        margin-bottom: 0.5em;
+    }
+    
+    .file-input {
+        margin-top: 0.5em;
+    }
+    
+    .file-input-label {
+        display: inline-block;
+        padding: 0.7em 1.2em;
+        background: #f3f4f6;
+        color: #374151;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    
+    .file-input-label:hover {
+        background: #e5e7eb;
+    }
+    
+    input[type="file"] {
+        display: none;
+    }
+    
+    .download-link {
+        display: inline-block;
+        padding: 0.7em 1.2em;
+        background: #f3f4f6;
+        color: #374151;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: background 0.15s;
+    }
+    
+    .download-link:hover {
+        background: #e5e7eb;
+    }
+    
+    .message {
+        padding: 1em;
+        border-radius: 6px;
+        margin: 1em 0;
+    }
+    
+    .success {
+        background: #ecfdf5;
+        color: #059669;
+        border: 1px solid #10b981;
+    }
+    
+    .error {
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #ef4444;
+    }
+    
     footer { background: #111; color: #fff; text-align: center; padding: 1.2em 0 1em 0; font-size: 1em; position: fixed; left: 0; right: 0; bottom: 0; z-index: 100; letter-spacing: 0.02em; }
+    
+    @media (max-width: 768px) {
+        .navbar-links {
+            display: none;
+        }
+    }
     </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="navbar-content">
-            <a href="/" class="navbar-brand">Asana<br>Каталог</a>
+            <a href="/" class="navbar-brand">Каталог<br>Асан</a>
             <div class="navbar-links">
                 <a href="/asanas" class="nav-link">Асаны</a>
                 <a href="/sources" class="nav-link">Источники</a>
-                <a href="/names" class="nav-link">Названия</a>
+                <a href="/about" class="nav-link">О проекте</a>
+                <a href="/expert-instructions" class="nav-link">Инструкции</a>
                 <a href="/settings" class="nav-link active">Настройки</a>
             </div>
-            <div class="navbar-actions">
-                <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+            <div class="navbar-actions" id="navbar-actions">
+                <!-- Динамически заполняется JavaScript -->
             </div>
         </div>
     </nav>
+    
     <div class="container">
-        <div class="content-header">
-            <h1>Настройки</h1>
+        <div class="page-header">
+            <h1 class="page-title">Настройки</h1>
         </div>
-        <div class="settings-block">
-            <h2>Выгрузка онтологии</h2>
-            <a href="/download-ontology" class="btn btn-primary">Скачать файл онтологии</a>
-        </div>
-        <div class="settings-block" style="margin-top:2em;">
-            <h2>Загрузка онтологии</h2>
-            <form method="post" action="/upload-ontology" enctype="multipart/form-data">
-                <input type="file" name="ontology_file" accept=".owl,.rdf,.xml" required />
-                <button type="submit" class="btn btn-primary">Загрузить</button>
-            </form>
+        
+        <div class="settings-container">
+            <div class="settings-section">
+                <h2 class="settings-title">Онтология</h2>
+                <p class="settings-description">
+                    Управление файлом онтологии асан
+                </p>
+                
+                <div>
+                    <a href="/download-ontology" class="download-link">Скачать онтологию</a>
+                </div>
+                
+                {% if user_role == 'admin' %}
+                    <div class="admin-only">
+                        <div class="admin-only-label">Только для администраторов</div>
+                        <form id="upload-ontology-form" enctype="multipart/form-data">
+                            <div class="form-group">
+                                <label for="ontology-file" class="form-label">Загрузить файл онтологии:</label>
+                                <div class="file-input">
+                                    <label for="ontology-file" class="file-input-label">Выбрать файл</label>
+                                    <input type="file" id="ontology-file" name="ontology_file" accept=".owl,.rdf,.xml">
+                                    <span id="selected-file">Файл не выбран</span>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">Загрузить</button>
+                            </div>
+                        </form>
+                        <div id="upload-message" class="message" style="display: none;"></div>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="settings-section">
+                <h2 class="settings-title">Помощь</h2>
+                <p class="settings-description">
+                    Полезные ссылки и документация
+                </p>
+                
+                <ul>
+                    <li><a href="/about">О проекте</a> - общая информация о проекте каталога асан</li>
+                    <li><a href="/expert-instructions">Инструкции для экспертов</a> - руководство по работе с каталогом</li>
+                </ul>
+            </div>
         </div>
     </div>
+    
     <footer>
-        © 2025 Platinum Watermelon
+        © {{ year }} Каталог асан
     </footer>
+    
+    <script>
+    // Добавление динамических элементов в навбар в зависимости от роли пользователя
+    function updateNavbar() {
+        const navbarActions = document.getElementById('navbar-actions');
+        const token = localStorage.getItem('token');
+        const userRole = localStorage.getItem('user_role');
+        
+        if (token) {
+            // Для экспертов и админов показываем дополнительные кнопки
+            if (userRole === 'admin' || userRole === 'expert') {
+                navbarActions.innerHTML = `
+                    <a href="/asana/add" class="btn-primary">Добавить асану</a>
+                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                `;
+            } else {
+                navbarActions.innerHTML = `
+                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                `;
+            }
+        } else {
+            navbarActions.innerHTML = `
+                <a href="/login" class="btn-primary">Войти</a>
+            `;
+        }
+    }
+    
+    // Обработка выбора файла
+    const fileInput = document.getElementById('ontology-file');
+    const selectedFileText = document.getElementById('selected-file');
+    
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                selectedFileText.textContent = this.files[0].name;
+            } else {
+                selectedFileText.textContent = 'Файл не выбран';
+            }
+        });
+    }
+    
+    // Обработка отправки формы загрузки онтологии
+    const uploadForm = document.getElementById('upload-ontology-form');
+    const uploadMessage = document.getElementById('upload-message');
+    
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!fileInput.files || !fileInput.files[0]) {
+                showMessage('Пожалуйста, выберите файл для загрузки', 'error');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('ontology_file', fileInput.files[0]);
+            
+            const token = localStorage.getItem('token');
+            
+            try {
+                const response = await fetch('/upload-ontology', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    showMessage('Файл онтологии успешно загружен', 'success');
+                    fileInput.value = '';
+                    selectedFileText.textContent = 'Файл не выбран';
+                } else {
+                    const data = await response.json();
+                    showMessage(data.detail || 'Ошибка при загрузке файла', 'error');
+                }
+            } catch (error) {
+                console.error('Error uploading ontology:', error);
+                showMessage('Ошибка при загрузке файла', 'error');
+            }
+        });
+    }
+    
+    // Функция для отображения сообщений
+    function showMessage(text, type) {
+        if (uploadMessage) {
+            uploadMessage.textContent = text;
+            uploadMessage.className = 'message ' + type;
+            uploadMessage.style.display = 'block';
+            
+            // Автоматически скрыть сообщение через 5 секунд
+            setTimeout(() => {
+                uploadMessage.style.display = 'none';
+            }, 5000);
+        }
+    }
+    
+    // При загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        updateNavbar();
+    });
+    </script>
 </body>
 </html> 

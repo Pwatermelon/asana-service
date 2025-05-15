@@ -8,6 +8,7 @@ import logging
 import time
 from jose import jwt
 import os
+import datetime
 
 # Настройка логирования
 logging.basicConfig(
@@ -45,12 +46,28 @@ async def get_current_token(request: Request) -> Optional[str]:
     
     return None
 
-async def set_token(response: Response, token: str):
+async def get_user_role(request: Request) -> Optional[str]:
+    """Get user role from encrypted cookie"""
+    token_cookie = request.cookies.get("session_token")
+    if not token_cookie:
+        return None
+    
+    try:
+        token_data = jwt.decode(token_cookie, SECRET_KEY, algorithms=["HS256"])
+        return token_data.get("role")
+            
+    except Exception as e:
+        logger.error(f"Error getting user role: {str(e)}")
+    
+    return None
+
+async def set_token(response: Response, token: str, role: str):
     """Store token in encrypted cookie"""
     expires_at = time.time() + (24 * 60 * 60)  # 24 hours
     token_data = {
         "token": token,
-        "expires_at": expires_at
+        "expires_at": expires_at,
+        "role": role
     }
     encrypted_token = jwt.encode(token_data, SECRET_KEY, algorithm="HS256")
     response.set_cookie(
@@ -77,35 +94,145 @@ async def root(request: Request):
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+    return templates.TemplateResponse("login.html", {"request": request})
 
-@app.post("/login", response_class=HTMLResponse)
+@app.post("/login", response_class=JSONResponse)
 async def login(request: Request):
-    form_data = await request.form()
-    username = form_data.get("username")
-    password = form_data.get("password")
-    
-    logger.info(f"Login attempt from IP: {request.client.host}")
-    logger.debug(f"Username provided: {username}")
-    
-    if not username or not password:
-        logger.warning("Missing username or password in login attempt")
-        return templates.TemplateResponse(
-            "login.html",
-            {"request": request, "error": "Username and password are required"}
-        )
-    
     try:
-        token_data = await api_client.login(username, password)
-        response = RedirectResponse("/asanas", status_code=303)
-        await set_token(response, token_data["access_token"])
+        data = await request.json()
+        username = data.get("username")
+        password = data.get("password")
+        remember_me = data.get("remember_me", False)
+        
+        logger.info(f"Login attempt from IP: {request.client.host}")
+        logger.debug(f"Username provided: {username}")
+        
+        if not username or not password:
+            logger.warning("Missing username or password in login attempt")
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Username and password are required"}
+            )
+        
+        token_data = await api_client.login(username, password, remember_me)
         logger.info(f"Successful login for user: {username}")
-        return response
+        
+        return JSONResponse(content=token_data)
     except Exception as e:
         logger.error(f"Login failed: {str(e)}")
-        return templates.TemplateResponse(
-            "login.html",
-            {"request": request, "error": "Invalid username or password"}
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "Invalid username or password"}
+        )
+
+@app.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
+
+@app.post("/register", response_class=JSONResponse)
+async def register(request: Request):
+    try:
+        data = await request.json()
+        username = data.get("username")
+        email = data.get("email")
+        first_name = data.get("first_name")
+        last_name = data.get("last_name")
+        password = data.get("password")
+        
+        logger.info(f"Registration attempt from IP: {request.client.host}")
+        
+        if not all([username, email, first_name, last_name, password]):
+            logger.warning("Missing required fields in registration attempt")
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "All fields are required"}
+            )
+        
+        result = await api_client.register(username, email, first_name, last_name, password)
+        logger.info(f"Successful registration for user: {username}")
+        
+        return JSONResponse(content=result)
+    except Exception as e:
+        logger.error(f"Registration failed: {str(e)}")
+        return JSONResponse(
+            status_code=400,
+            content={"detail": str(e)}
+        )
+
+@app.get("/confirm-registration", response_class=HTMLResponse)
+async def confirm_registration_page(request: Request):
+    return templates.TemplateResponse("confirm_registration.html", {"request": request})
+
+@app.post("/confirm-registration", response_class=JSONResponse)
+async def confirm_registration(request: Request):
+    try:
+        data = await request.json()
+        code = data.get("code")
+        
+        if not code:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Confirmation code is required"}
+            )
+        
+        result = await api_client.confirm_registration(code)
+        return JSONResponse(content=result)
+    except Exception as e:
+        logger.error(f"Confirmation failed: {str(e)}")
+        return JSONResponse(
+            status_code=400,
+            content={"detail": str(e)}
+        )
+
+@app.get("/reset-password", response_class=HTMLResponse)
+async def reset_password_page(request: Request):
+    return templates.TemplateResponse("reset_password.html", {"request": request})
+
+@app.post("/reset-password-request", response_class=JSONResponse)
+async def reset_password_request(request: Request):
+    try:
+        data = await request.json()
+        email = data.get("email")
+        
+        if not email:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Email is required"}
+            )
+        
+        result = await api_client.reset_password_request(email)
+        return JSONResponse(content=result)
+    except Exception as e:
+        logger.error(f"Password reset request failed: {str(e)}")
+        return JSONResponse(
+            status_code=400,
+            content={"detail": str(e)}
+        )
+
+@app.get("/reset-password-confirm", response_class=HTMLResponse)
+async def reset_password_confirm_page(request: Request):
+    return templates.TemplateResponse("reset_password_confirm.html", {"request": request})
+
+@app.post("/reset-password-confirm", response_class=JSONResponse)
+async def reset_password_confirm(request: Request):
+    try:
+        data = await request.json()
+        code = data.get("code")
+        new_password = data.get("new_password")
+        
+        if not code or not new_password:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Code and new password are required"}
+            )
+        
+        result = await api_client.reset_password_confirm(code, new_password)
+        return JSONResponse(content=result)
+    except Exception as e:
+        logger.error(f"Password reset confirmation failed: {str(e)}")
+        return JSONResponse(
+            status_code=400,
+            content={"detail": str(e)}
         )
 
 @app.get("/logout")
@@ -116,42 +243,116 @@ async def logout(request: Request):
     return response
 
 @app.get("/asanas", response_class=HTMLResponse)
-async def asanas_list(request: Request, search: Optional[str] = None):
-    token = await get_current_token(request)
-    if not token:
-        return RedirectResponse("/login")
+async def asanas_list(request: Request):
     try:
-        asanas = await api_client.get_asanas(token)
-        if search:
-            search_lower = search.lower()
-            asanas = [a for a in asanas if search_lower in (a['name']['ru'] or '').lower() or search_lower in (a['name']['en'] or '').lower() or search_lower in (a['name']['sanskrit'] or '').lower()]
-        return templates.TemplateResponse("asana_list.html", {"request": request, "asanas": asanas})
+        asanas = await api_client.get_asanas()
+        # Группируем асаны по первой букве названия
+        grouped_asanas = {}
+        for asana in asanas:
+            first_letter = asana['name']['ru'][0].upper() if asana['name']['ru'] else "?"
+            if first_letter not in grouped_asanas:
+                grouped_asanas[first_letter] = []
+            grouped_asanas[first_letter].append(asana)
+        
+        # Сортируем группы по алфавиту
+        sorted_groups = sorted(grouped_asanas.items())
+        
+        # Получаем уникальные первые буквы для навигации
+        alphabet = sorted(grouped_asanas.keys())
+        
+        return templates.TemplateResponse("asana_list.html", {
+            "request": request, 
+            "grouped_asanas": sorted_groups,
+            "alphabet": alphabet,
+            "year": datetime.datetime.now().year
+        })
     except Exception as e:
-        if "401" in str(e):
-            response = RedirectResponse("/login", status_code=303)
-            await remove_token(response)
-            return response
+        logger.error(f"Error loading asanas: {str(e)}")
         return templates.TemplateResponse("error.html", {
             "request": request,
             "error": "Failed to load asanas"
         })
 
-@app.get("/sources", response_class=HTMLResponse)
-async def sources_list(request: Request, search: Optional[str] = None):
-    token = await get_current_token(request)
-    if not token:
-        return RedirectResponse("/login")
+@app.get("/asanas/by-letter/{letter}", response_class=HTMLResponse)
+async def asanas_by_letter(request: Request, letter: str):
     try:
-        sources = await api_client.get_sources(token)
-        if search:
-            search_lower = search.lower()
-            sources = [s for s in sources if search_lower in (s['title'] or '').lower() or search_lower in (s['author'] or '').lower() or search_lower in str(s['year'])]
-        return templates.TemplateResponse("sources.html", {"request": request, "sources": sources})
+        asanas = await api_client.get_asanas_by_letter(letter)
+        
+        # Получаем все буквы алфавита для навигации
+        all_asanas = await api_client.get_asanas()
+        alphabet = sorted(set(asana['name']['ru'][0].upper() for asana in all_asanas if asana['name']['ru']))
+        
+        return templates.TemplateResponse("asana_list.html", {
+            "request": request, 
+            "asanas": asanas,
+            "alphabet": alphabet,
+            "current_letter": letter,
+            "year": datetime.datetime.now().year
+        })
     except Exception as e:
-        if "401" in str(e):
-            response = RedirectResponse("/login", status_code=303)
-            await remove_token(response)
-            return response
+        logger.error(f"Error loading asanas by letter: {str(e)}")
+        return templates.TemplateResponse("error.html", {
+            "request": request,
+            "error": "Failed to load asanas"
+        })
+
+@app.get("/asanas/by-source/{source_id}", response_class=HTMLResponse)
+async def asanas_by_source(request: Request, source_id: str):
+    try:
+        asanas = await api_client.get_asanas_by_source(source_id)
+        sources = await api_client.get_sources()
+        
+        # Находим информацию о текущем источнике
+        current_source = next((s for s in sources if s['id'] == source_id), None)
+        
+        return templates.TemplateResponse("source_asanas.html", {
+            "request": request, 
+            "asanas": asanas,
+            "source": current_source,
+            "year": datetime.datetime.now().year
+        })
+    except Exception as e:
+        logger.error(f"Error loading asanas by source: {str(e)}")
+        return templates.TemplateResponse("error.html", {
+            "request": request,
+            "error": "Failed to load asanas for source"
+        })
+
+@app.get("/search", response_class=HTMLResponse)
+async def search_page(request: Request, query: Optional[str] = None, fuzzy: bool = True):
+    try:
+        results = []
+        if query:
+            results = await api_client.search_asanas(query, fuzzy)
+        
+        return templates.TemplateResponse("search.html", {
+            "request": request,
+            "query": query,
+            "results": results,
+            "year": datetime.datetime.now().year
+        })
+    except Exception as e:
+        logger.error(f"Error searching asanas: {str(e)}")
+        return templates.TemplateResponse("error.html", {
+            "request": request,
+            "error": "Failed to search asanas"
+        })
+
+@app.get("/sources", response_class=HTMLResponse)
+async def sources_list(request: Request):
+    try:
+        sources = await api_client.get_sources()
+        
+        # Сортируем источники по автору
+        sources.sort(key=lambda s: s.get('author', '').lower())
+        
+        return templates.TemplateResponse("sources.html", {
+            "request": request, 
+            "sources": sources,
+            "year": datetime.datetime.now().year
+        })
+    except Exception as e:
+        logger.error(f"Error loading sources: {str(e)}")
         return templates.TemplateResponse("error.html", {
             "request": request,
             "error": "Failed to load sources"
@@ -172,242 +373,233 @@ async def delete_source(source_id: str, request: Request):
         logger.error(f"FRONTEND: Ошибка при удалении источника: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.get("/names", response_class=HTMLResponse)
-async def names_list(request: Request, search: Optional[str] = None):
-    token = await get_current_token(request)
-    if not token:
-        return RedirectResponse("/login")
+@app.get("/about", response_class=HTMLResponse)
+async def about_page(request: Request):
     try:
-        names = await api_client.get_names(token)
-        if search:
-            search_lower = search.lower()
-            names = [n for n in names if search_lower in (n['name_ru'] or '').lower() or search_lower in (n['name_en'] or '').lower() or search_lower in (n['name_sanskrit'] or '').lower()]
-        return templates.TemplateResponse("names.html", {"request": request, "names": names})
+        about_data = await api_client.get_about_project()
+        content = about_data.get('content', 'Информация о проекте отсутствует')
+        
+        user_role = await get_user_role(request)
+        
+        return templates.TemplateResponse("about_project.html", {
+            "request": request,
+            "content": content,
+            "is_admin": user_role == "admin",
+            "year": datetime.datetime.now().year
+        })
     except Exception as e:
-        if "401" in str(e):
-            response = RedirectResponse("/login", status_code=303)
-            await remove_token(response)
-            return response
+        logger.error(f"Error loading about project: {str(e)}")
         return templates.TemplateResponse("error.html", {
             "request": request,
-            "error": "Failed to load names"
+            "error": "Failed to load about project information"
         })
 
-@app.delete("/asana-names/{name_id}")
-async def delete_name(name_id: str, request: Request):
-    logger.info(f"FRONTEND: Получен запрос на удаление названия: {name_id}")
+@app.post("/about-project", response_class=JSONResponse)
+async def update_about_project(request: Request):
     token = await get_current_token(request)
-    if not token:
-        logger.error("FRONTEND: Нет токена авторизации!")
-        raise HTTPException(status_code=401, detail="Not authenticated")
+    user_role = await get_user_role(request)
+    
+    if not token or user_role != "admin":
+        return JSONResponse(
+            status_code=403,
+            content={"detail": "Only admins can update about project information"}
+        )
+    
     try:
-        result = await api_client.delete_name(name_id, token)
-        logger.info(f"FRONTEND: Ответ от бэкенда: {result}")
-        return {"message": "Name deleted successfully"}
+        data = await request.json()
+        content = data.get("content")
+        
+        if not content:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Content is required"}
+            )
+        
+        result = await api_client.update_about_project(content, token)
+        return JSONResponse(content={"success": True})
     except Exception as e:
-        logger.error(f"FRONTEND: Ошибка при удалении названия: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Error updating about project: {str(e)}")
+        return JSONResponse(
+            status_code=400,
+            content={"detail": str(e)}
+        )
+
+@app.get("/expert-instructions", response_class=HTMLResponse)
+async def expert_instructions_page(request: Request):
+    try:
+        instructions_data = await api_client.get_expert_instructions()
+        content = instructions_data.get('content', 'Инструкции для экспертов отсутствуют')
+        
+        user_role = await get_user_role(request)
+        is_expert_or_admin = user_role in ["expert", "admin"]
+        
+        return templates.TemplateResponse("expert_instructions.html", {
+            "request": request,
+            "content": content,
+            "is_admin": user_role == "admin",
+            "is_expert_or_admin": is_expert_or_admin,
+            "year": datetime.datetime.now().year
+        })
+    except Exception as e:
+        logger.error(f"Error loading expert instructions: {str(e)}")
+        return templates.TemplateResponse("error.html", {
+            "request": request,
+            "error": "Failed to load expert instructions"
+        })
+
+@app.post("/expert-instructions", response_class=JSONResponse)
+async def update_expert_instructions(request: Request):
+    token = await get_current_token(request)
+    user_role = await get_user_role(request)
+    
+    if not token or user_role != "admin":
+        return JSONResponse(
+            status_code=403,
+            content={"detail": "Only admins can update expert instructions"}
+        )
+    
+    try:
+        data = await request.json()
+        content = data.get("content")
+        
+        if not content:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Content is required"}
+            )
+        
+        result = await api_client.update_expert_instructions(content, token)
+        return JSONResponse(content={"success": True})
+    except Exception as e:
+        logger.error(f"Error updating expert instructions: {str(e)}")
+        return JSONResponse(
+            status_code=400,
+            content={"detail": str(e)}
+        )
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    token = await get_current_token(request)
+    user_role = await get_user_role(request)
+    
+    context = {
+        "request": request,
+        "is_admin": user_role == "admin",
+        "year": datetime.datetime.now().year
+    }
+    
+    return templates.TemplateResponse("settings.html", context)
+
+@app.post("/upload-ontology", response_class=JSONResponse)
+async def upload_ontology(request: Request, ontology_file: UploadFile = File(...)):
+    token = await get_current_token(request)
+    user_role = await get_user_role(request)
+    
+    if not token or user_role != "admin":
+        return JSONResponse(
+            status_code=403,
+            content={"detail": "Only admins can upload ontology file"}
+        )
+    
+    try:
+        file_content = await ontology_file.read()
+        result = await api_client.upload_ontology(file_content, token)
+        return JSONResponse(content={"success": True})
+    except Exception as e:
+        logger.error(f"Error uploading ontology: {str(e)}")
+        return JSONResponse(
+            status_code=400,
+            content={"detail": str(e)}
+        )
 
 @app.get("/asana/add", response_class=HTMLResponse)
 async def add_asana_form(request: Request):
     token = await get_current_token(request)
-    if not token:
+    user_role = await get_user_role(request)
+    
+    if not token or user_role not in ["admin", "expert"]:
         return RedirectResponse("/login")
+        
     try:
-        names = await api_client.get_names(token)
-        sources = await api_client.get_sources(token)
+        names = await api_client.get_names()
+        sources = await api_client.get_sources()
         return templates.TemplateResponse(
             "add_asana.html",
-            {"request": request, "names": names, "sources": sources}
+            {
+                "request": request, 
+                "names": names, 
+                "sources": sources,
+                "year": datetime.datetime.now().year
+            }
         )
     except Exception as e:
-        if "401" in str(e):
-            response = RedirectResponse("/login", status_code=303)
-            await remove_token(response)
-            return response
+        logger.error(f"Error loading data for add asana form: {str(e)}")
         return templates.TemplateResponse("error.html", {
             "request": request,
             "error": "Не удалось загрузить данные для формы добавления асаны"
         })
 
-@app.post("/sources")
-async def add_source(request: Request):
-    token = await get_current_token(request)
-    if not token:
-        return JSONResponse(status_code=401, content={"detail": "Не авторизован"})
+@app.get("/asana/{asana_id}", response_class=HTMLResponse)
+async def asana_detail(request: Request, asana_id: str):
     try:
-        data = await request.json()
-        title = data.get("title")
-        author = data.get("author")
-        year = data.get("year")
-        if not (title and author and year):
-            return JSONResponse(status_code=400, content={"detail": "Все поля обязательны"})
-        result = await api_client.make_request(
-            "POST",
-            f"{api_client.BACKEND_URL}/sources",
-            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-            json={"title": title, "author": author, "year": year}
-        )
-        return JSONResponse(content=result)
-    except Exception as e:
-        return JSONResponse(status_code=400, content={"detail": str(e)})
-
-@app.post("/asana-names")
-async def add_asana_name(request: Request):
-    token = await get_current_token(request)
-    if not token:
-        return JSONResponse(status_code=401, content={"detail": "Не авторизован"})
-    try:
-        data = await request.json()
-        name_sanskrit = data.get("name_sanskrit")
-        name_ru = data.get("name_ru")
-        name_en = data.get("name_en")
-        if not (name_sanskrit and name_ru and name_en):
-            return JSONResponse(status_code=400, content={"detail": "Все поля обязательны"})
-        result = await api_client.make_request(
-            "POST",
-            f"{api_client.BACKEND_URL}/asana-names",
-            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-            json={"name_sanskrit": name_sanskrit, "name_ru": name_ru, "name_en": name_en}
-        )
-        return JSONResponse(content=result)
-    except Exception as e:
-        return JSONResponse(status_code=400, content={"detail": str(e)})
-
-@app.post("/asana/add", response_class=HTMLResponse)
-async def add_asana(request: Request):
-    token = await get_current_token(request)
-    if not token:
-        return RedirectResponse("/login")
-    try:
-        form = await request.form()
-        selected_name = form.get("selected_name")
-        new_name_ru = form.get("new_name_ru")
-        new_name_en = form.get("new_name_en")
-        new_name_sanskrit = form.get("new_name_sanskrit")
-        selected_source = form.get("selected_source")
-        new_source_title = form.get("new_source_title")
-        new_source_author = form.get("new_source_author")
-        new_source_year = form.get("new_source_year")
-        photo = form.get("photo")
-        # Получаем файл
-        photo_file = None
-        if "photo" in request._form:
-            photo_file = request._form["photo"]
-        elif hasattr(request, "files"):
-            photo_file = request.files.get("photo")
-        if not photo_file:
-            # Попробуем получить через UploadFile
-            try:
-                form2 = await request.form()
-                photo_file = form2.get("photo")
-            except:
-                pass
-        if not photo_file:
-            return templates.TemplateResponse("error.html", {"request": request, "error": "Фотография обязательна"})
-        # Читаем файл
-        photo_bytes = await photo_file.read()
-        # Вызываем api_client
-        result = await api_client.add_asana(
-            selected_name=selected_name,
-            selected_source=selected_source,
-            new_name_ru=new_name_ru,
-            new_name_en=new_name_en,
-            new_name_sanskrit=new_name_sanskrit,
-            new_source_title=new_source_title,
-            new_source_author=new_source_author,
-            new_source_year=new_source_year,
-            photo=photo_bytes,
-            token=token
-        )
-        if result.get("success"):
-            return RedirectResponse("/asanas", status_code=303)
-        else:
-            return templates.TemplateResponse("error.html", {"request": request, "error": result.get("data", {}).get("detail", "Ошибка при добавлении асаны")})
-    except Exception as e:
-        return templates.TemplateResponse("error.html", {"request": request, "error": str(e)})
-
-@app.delete("/asanas")
-async def delete_asana(request: Request, uri: str = Query(...)):
-    logger.info(f"FRONTEND: Получен запрос на удаление асаны: {uri}")
-    token = await get_current_token(request)
-    if not token:
-        logger.error("FRONTEND: Нет токена авторизации!")
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    try:
-        result = await api_client.delete_asana(uri, token)
-        logger.info(f"FRONTEND: Ответ от бэкенда: {result}")
-        return {"message": "Asana deleted successfully"}
-    except Exception as e:
-        logger.error(f"FRONTEND: Ошибка при удалении асаны: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.delete("/delete-source")
-async def delete_source(request: Request, uri: str = Query(...)):
-    logger.info(f"FRONTEND: Получен запрос на удаление источника: {uri}")
-    token = await get_current_token(request)
-    if not token:
-        logger.error("FRONTEND: Нет токена авторизации!")
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    try:
-        result = await api_client.delete_source(uri, token)
-        logger.info(f"FRONTEND: Ответ от бэкенда: {result}")
-        return {"message": "Source deleted successfully"}
-    except Exception as e:
-        logger.error(f"FRONTEND: Ошибка при удалении источника: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.delete("/delete-asana-name")
-async def delete_asana_name(request: Request, uri: str = Query(...)):
-    logger.info(f"FRONTEND: Получен запрос на удаление названия: {uri}")
-    token = await get_current_token(request)
-    if not token:
-        logger.error("FRONTEND: Нет токена авторизации!")
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    try:
-        result = await api_client.delete_name(uri, token)
-        logger.info(f"FRONTEND: Ответ от бэкенда: {result}")
-        return {"message": "Name deleted successfully"}
-    except Exception as e:
-        logger.error(f"FRONTEND: Ошибка при удалении названия: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.get("/asana", response_class=HTMLResponse)
-async def asana_detail_query(request: Request, id: Optional[str] = Query(None)):
-    if not id:
-        return RedirectResponse("/asanas")
-    token = await get_current_token(request)
-    if not token:
-        return RedirectResponse("/login")
-    try:
-        asanas = await api_client.get_asanas(token)
-        asana = next((a for a in asanas if a["id"] == id), None)
+        # Получаем все асаны и находим нужную по ID
+        asanas = await api_client.get_asanas()
+        asana = next((a for a in asanas if a.get('id') == asana_id), None)
+        
         if not asana:
-            return templates.TemplateResponse("error.html", {"request": request, "error": "Асана не найдена"})
-        return templates.TemplateResponse("asana_detail.html", {"request": request, "asana": asana})
+            return templates.TemplateResponse("error.html", {
+                "request": request,
+                "error": "Асана не найдена"
+            })
+        
+        # Получаем все источники для формы добавления фото
+        user_role = await get_user_role(request)
+        sources = []
+        if user_role in ["admin", "expert"]:
+            sources = await api_client.get_sources()
+        
+        return templates.TemplateResponse("asana_detail.html", {
+            "request": request,
+            "asana": asana,
+            "sources": sources,
+            "is_expert_or_admin": user_role in ["admin", "expert"],
+            "year": datetime.datetime.now().year
+        })
     except Exception as e:
-        return templates.TemplateResponse("error.html", {"request": request, "error": str(e)})
+        logger.error(f"Error loading asana details: {str(e)}")
+        return templates.TemplateResponse("error.html", {
+            "request": request,
+            "error": "Failed to load asana details"
+        })
 
-@app.post("/asana/{asana_id}/add-photo")
+@app.post("/asana/{asana_id}/add-photo", response_class=JSONResponse)
 async def add_asana_photo(request: Request, asana_id: str):
     token = await get_current_token(request)
-    if not token:
-        return RedirectResponse("/login")
-    form = await request.form()
-    photo_file = form.get("photo")
-    if not photo_file:
-        return templates.TemplateResponse("error.html", {"request": request, "error": "Файл не выбран"})
-    photo_bytes = await photo_file.read()
-    # Вызываем api_client для добавления фото (реализуй на бэке)
+    user_role = await get_user_role(request)
+    
+    if not token or user_role not in ["admin", "expert"]:
+        return JSONResponse(
+            status_code=403,
+            content={"detail": "Only admins and experts can add photos"}
+        )
+    
     try:
-        await api_client.add_asana_photo(asana_id, photo_bytes, token)
-        return RedirectResponse(f"/asana/{asana_id}", status_code=303)
+        form = await request.form()
+        photo = form.get("photo")
+        source_id = form.get("source_id")
+        
+        if not photo or not source_id:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Photo and source are required"}
+            )
+        
+        photo_bytes = await photo.read()
+        result = await api_client.add_asana_photo(asana_id, photo_bytes, source_id, token)
+        return JSONResponse(content={"success": True})
     except Exception as e:
-        return templates.TemplateResponse("error.html", {"request": request, "error": str(e)})
-
-@app.get("/settings", response_class=HTMLResponse)
-async def settings_page(request: Request):
-    token = await get_current_token(request)
-    if not token:
-        return RedirectResponse("/login")
-    return templates.TemplateResponse("settings.html", {"request": request})
+        logger.error(f"Error adding asana photo: {str(e)}")
+        return JSONResponse(
+            status_code=400,
+            content={"detail": str(e)}
+        )

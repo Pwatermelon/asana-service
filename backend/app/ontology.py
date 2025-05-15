@@ -63,7 +63,9 @@ def load_asanas():
         name_data = {
             "ru": str(g.value(name_obj, ASANA.nameInRussian)) if name_obj else "",
             "en": str(g.value(name_obj, ASANA.nameInEnglish)) if name_obj else "",
-            "sanskrit": str(g.value(name_obj, ASANA.nameInSanskrit)) if name_obj else ""
+            "sanskrit": str(g.value(name_obj, ASANA.nameInSanskrit)) if name_obj else "",
+            "transliteration": str(g.value(name_obj, ASANA.nameTransliteration)) if name_obj and g.value(name_obj, ASANA.nameTransliteration) else "",
+            "translation": str(g.value(name_obj, ASANA.nameTranslation)) if name_obj and g.value(name_obj, ASANA.nameTranslation) else ""
         }
         source_obj = None
         if photo_objs:
@@ -74,7 +76,10 @@ def load_asanas():
             source_data = {
                 "title": str(g.value(source_obj, ASANA.sourseTitle)),
                 "author": str(g.value(source_obj, ASANA.sourceAuthor)),
-                "year": int(g.value(source_obj, ASANA.sourceYear))
+                "year": int(g.value(source_obj, ASANA.sourceYear)),
+                "publisher": str(g.value(source_obj, ASANA.sourcePublisher)) if g.value(source_obj, ASANA.sourcePublisher) else "",
+                "pages": int(g.value(source_obj, ASANA.sourcePages)) if g.value(source_obj, ASANA.sourcePages) else 0,
+                "annotation": str(g.value(source_obj, ASANA.sourceAnnotation)) if g.value(source_obj, ASANA.sourceAnnotation) else ""
             }
         photos_base64 = [str(g.value(photo, ASANA.base64Photo)) for photo in photo_objs if g.value(photo, ASANA.base64Photo)]
         logger.debug(f"Photos count: {len(photos_base64)}")
@@ -137,7 +142,10 @@ def load_sources():
             "id": str(source),
             "title": str(g.value(source, ASANA.sourseTitle)),
             "author": str(g.value(source, ASANA.sourceAuthor)),
-            "year": int(g.value(source, ASANA.sourceYear))
+            "year": int(g.value(source, ASANA.sourceYear)),
+            "publisher": str(g.value(source, ASANA.sourcePublisher)) if g.value(source, ASANA.sourcePublisher) else "",
+            "pages": int(g.value(source, ASANA.sourcePages)) if g.value(source, ASANA.sourcePages) else 0,
+            "annotation": str(g.value(source, ASANA.sourceAnnotation)) if g.value(source, ASANA.sourceAnnotation) else ""
         }
         logger.debug(f"Loaded source: {source_data}")
         sources.append(source_data)
@@ -157,6 +165,17 @@ def add_source(source_data: Dict[str, Any]) -> str:
         g.add((source_uri, ASANA.sourseTitle, Literal(source_data["title"])))
         g.add((source_uri, ASANA.sourceAuthor, Literal(source_data["author"])))
         g.add((source_uri, ASANA.sourceYear, Literal(source_data["year"])))
+        
+        # Добавляем новые поля источника, если они есть
+        if "publisher" in source_data and source_data["publisher"]:
+            g.add((source_uri, ASANA.sourcePublisher, Literal(source_data["publisher"])))
+        
+        if "pages" in source_data and source_data["pages"]:
+            g.add((source_uri, ASANA.sourcePages, Literal(source_data["pages"])))
+        
+        if "annotation" in source_data and source_data["annotation"]:
+            g.add((source_uri, ASANA.sourceAnnotation, Literal(source_data["annotation"])))
+            
         logger.debug("Added source triples")
         
         logger.info(f"Saving graph to {config.OWL_FILE_PATH}")
@@ -176,8 +195,10 @@ def load_asana_names():
         name_data = {
             "id": str(name),
             "name_ru": str(g.value(name, ASANA.nameInRussian)),
-            "name_en": str(g.value(name, ASANA.nameInEnglish)),
-            "name_sanskrit": str(g.value(name, ASANA.nameInSanskrit))
+            "name_en": str(g.value(name, ASANA.nameInEnglish)) if g.value(name, ASANA.nameInEnglish) else "",
+            "name_sanskrit": str(g.value(name, ASANA.nameInSanskrit)) if g.value(name, ASANA.nameInSanskrit) else "",
+            "transliteration": str(g.value(name, ASANA.nameTransliteration)) if g.value(name, ASANA.nameTransliteration) else "",
+            "translation": str(g.value(name, ASANA.nameTranslation)) if g.value(name, ASANA.nameTranslation) else ""
         }
         logger.debug(f"Loaded asana name: {name_data}")
         names.append(name_data)
@@ -195,8 +216,21 @@ def add_asana_name(name_data: Dict[str, str]) -> str:
         
         g.add((name_uri, RDF.type, ASANA.AsanaName))
         g.add((name_uri, ASANA.nameInRussian, Literal(name_data["name_ru"])))
-        g.add((name_uri, ASANA.nameInEnglish, Literal(name_data["name_en"])))
-        g.add((name_uri, ASANA.nameInSanskrit, Literal(name_data["name_sanskrit"])))
+        
+        # Добавляем необязательные поля, если они есть
+        if "name_en" in name_data and name_data["name_en"]:
+            g.add((name_uri, ASANA.nameInEnglish, Literal(name_data["name_en"])))
+        
+        if "name_sanskrit" in name_data and name_data["name_sanskrit"]:
+            g.add((name_uri, ASANA.nameInSanskrit, Literal(name_data["name_sanskrit"])))
+        
+        # Добавляем новые поля
+        if "transliteration" in name_data and name_data["transliteration"]:
+            g.add((name_uri, ASANA.nameTransliteration, Literal(name_data["transliteration"])))
+        
+        if "translation" in name_data and name_data["translation"]:
+            g.add((name_uri, ASANA.nameTranslation, Literal(name_data["translation"])))
+            
         logger.debug("Added name triples")
         
         logger.info(f"Saving graph to {config.OWL_FILE_PATH}")
@@ -279,7 +313,7 @@ def delete_asana_from_ontology(asana_id: str) -> bool:
         print(f'ОШИБКА ПРИ УДАЛЕНИИ АСАНЫ: {e}')
         raise
 
-def add_photo_to_asana(asana_id: str, photo_bytes: bytes):
+def add_photo_to_asana(asana_id: str, photo_bytes: bytes, source_id: str = None):
     try:
         g = get_graph()
         asana_uri = URIRef(asana_id)
@@ -294,7 +328,132 @@ def add_photo_to_asana(asana_id: str, photo_bytes: bytes):
         photo_uri = URIRef(f"{ASANA}photo_{uuid.uuid4()}")
         g.add((photo_uri, RDF.type, ASANA.AsanaPhoto))
         g.add((photo_uri, ASANA.base64Photo, Literal(photo_base64)))
+        
+        # Если указан источник, добавляем его
+        if source_id:
+            source_uri = URIRef(source_id)
+            g.add((photo_uri, ASANA.hasSource, source_uri))
+            
         g.add((asana_uri, ASANA.hasPhoto, photo_uri))
         g.serialize(destination=config.OWL_FILE_PATH, format="xml")
+        
+        return str(photo_uri)
     except Exception as e:
         raise
+
+# Получение асан по первой букве (для каталога по алфавиту)
+def get_asanas_by_first_letter(letter: str):
+    logger.info(f"Getting asanas starting with letter: {letter}")
+    asanas = load_asanas()
+    filtered_asanas = [asana for asana in asanas if asana["name"]["ru"] and asana["name"]["ru"][0].upper() == letter.upper()]
+    logger.info(f"Found {len(filtered_asanas)} asanas starting with letter: {letter}")
+    return filtered_asanas
+
+# Получение асан по источнику
+def get_asanas_by_source(source_id: str):
+    logger.info(f"Getting asanas for source ID: {source_id}")
+    g = get_graph()
+    source_uri = URIRef(source_id)
+    
+    # Найти все фото, связанные с источником
+    photo_uris = list(g.subjects(ASANA.hasSource, source_uri))
+    
+    # Найти все асаны, связанные с этими фото
+    asana_uris = set()
+    for photo_uri in photo_uris:
+        asanas = list(g.subjects(ASANA.hasPhoto, photo_uri))
+        asana_uris.update(asanas)
+    
+    # Загрузить данные для каждой асаны
+    asanas = []
+    for asana_uri in asana_uris:
+        name_obj = g.value(asana_uri, ASANA.hasName)
+        photo_objs = list(g.objects(asana_uri, ASANA.hasPhoto))
+        
+        # Фильтруем фото только от указанного источника
+        source_photo_objs = [photo for photo in photo_objs if g.value(photo, ASANA.hasSource) == source_uri]
+        
+        name_data = {
+            "ru": str(g.value(name_obj, ASANA.nameInRussian)) if name_obj else "",
+            "en": str(g.value(name_obj, ASANA.nameInEnglish)) if name_obj and g.value(name_obj, ASANA.nameInEnglish) else "",
+            "sanskrit": str(g.value(name_obj, ASANA.nameInSanskrit)) if name_obj and g.value(name_obj, ASANA.nameInSanskrit) else "",
+            "transliteration": str(g.value(name_obj, ASANA.nameTransliteration)) if name_obj and g.value(name_obj, ASANA.nameTransliteration) else "",
+            "translation": str(g.value(name_obj, ASANA.nameTranslation)) if name_obj and g.value(name_obj, ASANA.nameTranslation) else ""
+        }
+        
+        photos_base64 = [str(g.value(photo, ASANA.base64Photo)) for photo in source_photo_objs if g.value(photo, ASANA.base64Photo)]
+        
+        asana_data = {
+            "id": str(asana_uri),
+            "name": name_data,
+            "photos": photos_base64,
+            "photo": photos_base64[0] if photos_base64 else ""
+        }
+        asanas.append(asana_data)
+    
+    logger.info(f"Found {len(asanas)} asanas for source ID: {source_id}")
+    return asanas
+
+# Поиск асан по названию (с поддержкой нечеткого поиска)
+def search_asanas_by_name(query: str, fuzzy_threshold: float = 0.7):
+    logger.info(f"Searching asanas with query: {query}")
+    try:
+        from rapidfuzz import fuzz
+        
+        asanas = load_asanas()
+        results = []
+        
+        # Приводим запрос к нижнему регистру для регистронезависимого поиска
+        query_lower = query.lower()
+        
+        for asana in asanas:
+            name_ru = asana["name"]["ru"].lower()
+            
+            # Точное совпадение
+            if query_lower in name_ru:
+                asana["match_score"] = 1.0
+                results.append(asana)
+                continue
+                
+            # Нечеткое совпадение
+            ratio = fuzz.ratio(query_lower, name_ru) / 100.0
+            partial_ratio = fuzz.partial_ratio(query_lower, name_ru) / 100.0
+            
+            # Используем максимальный из показателей схожести
+            match_score = max(ratio, partial_ratio)
+            
+            if match_score >= fuzzy_threshold:
+                asana["match_score"] = match_score
+                results.append(asana)
+        
+        # Сортируем результаты по релевантности
+        results.sort(key=lambda a: a["match_score"], reverse=True)
+        
+        logger.info(f"Found {len(results)} asanas matching query: {query}")
+        return results
+    except ImportError:
+        # Если библиотека rapidfuzz не установлена, используем обычный поиск
+        logger.warning("rapidfuzz not installed, using simple search")
+        asanas = load_asanas()
+        query_lower = query.lower()
+        results = [asana for asana in asanas if query_lower in asana["name"]["ru"].lower()]
+        logger.info(f"Found {len(results)} asanas matching query: {query}")
+        return results
+
+def get_photo_of_asana_from_source(asana_id: str, source_id: str) -> str | None:
+    """
+    Возвращает base64 фото асаны по id асаны и id источника, если такое фото есть
+    """
+    g = get_graph()
+    ASANA = Namespace("http://www.semanticweb.org/platinum_watermelon/ontologies/Asana#")
+    asana_uri = URIRef(asana_id)
+    source_uri = URIRef(source_id)
+    # Найти все фото, связанные с асаной
+    photo_uris = list(g.objects(asana_uri, ASANA.hasPhoto))
+    for photo_uri in photo_uris:
+        # Проверяем, связано ли фото с нужным источником
+        if g.value(photo_uri, ASANA.hasSource) == source_uri:
+            base64_photo = g.value(photo_uri, ASANA.base64Photo)
+            if base64_photo:
+                return str(base64_photo)
+    return None
