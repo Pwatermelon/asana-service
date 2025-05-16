@@ -77,12 +77,31 @@ async def set_token(response: Response, token: str, role: str):
         samesite="lax",
         max_age=24 * 60 * 60
     )
-    logger.info("Saved token in cookie (not secure)")
+    logger.info("Saved token in cookie")
 
 async def remove_token(response: Response):
     """Remove token cookie"""
     response.delete_cookie(key="session_token")
     logger.info("Removed token cookie")
+
+async def get_token_for_api(request: Request) -> Optional[str]:
+    """Get token from cookie for API requests"""
+    token_cookie = request.cookies.get("session_token")
+    if not token_cookie:
+        return None
+    
+    try:
+        token_data = jwt.decode(token_cookie, SECRET_KEY, algorithms=["HS256"])
+        token = token_data.get("token")
+        expires_at = token_data.get("expires_at", 0)
+        
+        if token and time.time() < expires_at:
+            return token
+            
+    except Exception as e:
+        logger.error(f"Error getting token for API: {str(e)}")
+    
+    return None
 
 # Routes
 @app.get("/", response_class=HTMLResponse)
@@ -117,7 +136,10 @@ async def login(request: Request):
         token_data = await api_client.login(username, password, remember_me)
         logger.info(f"Successful login for user: {username}")
         
-        return JSONResponse(content=token_data)
+        response = JSONResponse(content=token_data)
+        await set_token(response, token_data["access_token"], token_data["role"])
+        
+        return response
     except Exception as e:
         logger.error(f"Login failed: {str(e)}")
         return JSONResponse(
@@ -245,7 +267,10 @@ async def logout(request: Request):
 @app.get("/asanas", response_class=HTMLResponse)
 async def asanas_list(request: Request):
     try:
-        asanas = await api_client.get_asanas()
+        token = await get_token_for_api(request)
+        user_role = await get_user_role(request)
+        asanas = await api_client.get_asanas(token)
+        
         # Группируем асаны по первой букве названия
         grouped_asanas = {}
         for asana in asanas:
@@ -264,6 +289,7 @@ async def asanas_list(request: Request):
             "request": request, 
             "grouped_asanas": sorted_groups,
             "alphabet": alphabet,
+            "is_expert_or_admin": user_role in ["admin", "expert"],
             "year": datetime.datetime.now().year
         })
     except Exception as e:
@@ -276,10 +302,11 @@ async def asanas_list(request: Request):
 @app.get("/asanas/by-letter/{letter}", response_class=HTMLResponse)
 async def asanas_by_letter(request: Request, letter: str):
     try:
-        asanas = await api_client.get_asanas_by_letter(letter)
+        token = await get_token_for_api(request)
+        asanas = await api_client.get_asanas_by_letter(letter, token)
         
         # Получаем все буквы алфавита для навигации
-        all_asanas = await api_client.get_asanas()
+        all_asanas = await api_client.get_asanas(token)
         alphabet = sorted(set(asana['name']['ru'][0].upper() for asana in all_asanas if asana['name']['ru']))
         
         return templates.TemplateResponse("asana_list.html", {
@@ -299,8 +326,9 @@ async def asanas_by_letter(request: Request, letter: str):
 @app.get("/asanas/by-source/{source_id}", response_class=HTMLResponse)
 async def asanas_by_source(request: Request, source_id: str):
     try:
-        asanas = await api_client.get_asanas_by_source(source_id)
-        sources = await api_client.get_sources()
+        token = await get_token_for_api(request)
+        asanas = await api_client.get_asanas_by_source(source_id, token)
+        sources = await api_client.get_sources(token)
         
         # Находим информацию о текущем источнике
         current_source = next((s for s in sources if s['id'] == source_id), None)
@@ -318,25 +346,7 @@ async def asanas_by_source(request: Request, source_id: str):
             "error": "Failed to load asanas for source"
         })
 
-@app.get("/search", response_class=HTMLResponse)
-async def search_page(request: Request, query: Optional[str] = None, fuzzy: bool = True):
-    try:
-        results = []
-        if query:
-            results = await api_client.search_asanas(query, fuzzy)
-        
-        return templates.TemplateResponse("search.html", {
-            "request": request,
-            "query": query,
-            "results": results,
-            "year": datetime.datetime.now().year
-        })
-    except Exception as e:
-        logger.error(f"Error searching asanas: {str(e)}")
-        return templates.TemplateResponse("error.html", {
-            "request": request,
-            "error": "Failed to search asanas"
-        })
+
 
 @app.get("/sources", response_class=HTMLResponse)
 async def sources_list(request: Request):
@@ -603,3 +613,125 @@ async def add_asana_photo(request: Request, asana_id: str):
             status_code=400,
             content={"detail": str(e)}
         )
+
+@app.get("/sources/add", response_class=HTMLResponse)
+async def add_source_form(request: Request):
+    token = await get_token_for_api(request)
+    user_role = await get_user_role(request)
+    
+    if not token or user_role not in ["admin", "expert"]:
+        return RedirectResponse("/login")
+        
+    return templates.TemplateResponse(
+        "add_source.html",
+        {
+            "request": request,
+            "is_expert_or_admin": True,
+            "is_authenticated": True,
+            "year": datetime.datetime.now().year
+        }
+    )
+
+@app.get("/asana/{asana_id}/check-photo/{source_id}")
+async def check_asana_photo(request: Request, asana_id: str, source_id: str):
+    token = await get_token_for_api(request)
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    try:
+        # Проверяем наличие фото в источнике
+        photo = await api_client.get_asana_photo_by_source(asana_id, source_id, token)
+        return {"hasPhoto": photo is not None}
+    except Exception as e:
+        logger.error(f"Error checking asana photo: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/sources/{source_id}/asanas", response_class=HTMLResponse)
+async def source_asanas(request: Request, source_id: str):
+    try:
+        token = await get_token_for_api(request)
+        user_role = await get_user_role(request)
+        
+        # Получаем информацию об источнике
+        source = await api_client.get_source(source_id, token)
+        
+        # Получаем все асаны из этого источника
+        asanas = await api_client.get_asanas_by_source(source_id, token)
+        
+        # Группируем асаны по первой букве названия
+        grouped_asanas = {}
+        for asana in asanas:
+            first_letter = asana['name']['ru'][0].upper() if asana['name']['ru'] else "?"
+            if first_letter not in grouped_asanas:
+                grouped_asanas[first_letter] = []
+            grouped_asanas[first_letter].append(asana)
+        
+        # Сортируем группы по алфавиту
+        sorted_groups = dict(sorted(grouped_asanas.items()))
+        
+        # Получаем уникальные первые буквы для навигации
+        alphabet = sorted(grouped_asanas.keys())
+        
+        return templates.TemplateResponse("source_asanas.html", {
+            "request": request,
+            "source": source,
+            "grouped_asanas": sorted_groups,
+            "alphabet": alphabet,
+            "is_expert_or_admin": user_role in ["admin", "expert"],
+            "year": datetime.datetime.now().year
+        })
+    except Exception as e:
+        logger.error(f"Error loading source asanas: {str(e)}")
+        return templates.TemplateResponse("error.html", {
+            "request": request,
+            "error": "Failed to load asanas from source"
+        })
+
+@app.get("/api/asanas/search")
+async def api_search_asanas(request: Request, query: str, fuzzy: bool = True):
+    """API endpoint для поиска асан"""
+    try:
+        token = await get_token_for_api(request)
+        results = await api_client.search_asanas(query, fuzzy, token)
+        return results
+    except Exception as e:
+        logger.error(f"Error searching asanas: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/auth/check")
+async def check_auth(request: Request):
+    """API endpoint для проверки авторизации"""
+    try:
+        token = await get_current_token(request)
+        user_role = await get_user_role(request)
+        return {
+            "is_authenticated": token is not None,
+            "role": user_role
+        }
+    except Exception as e:
+        logger.error(f"Error checking auth: {str(e)}")
+        return {
+            "is_authenticated": False,
+            "role": None
+        }
+
+@app.get("/api/sources/search")
+async def api_search_sources(request: Request, query: str):
+    """API endpoint для поиска источников"""
+    try:
+        token = await get_token_for_api(request)
+        sources = await api_client.get_sources(token)
+        
+        # Поиск по названию, автору и аннотации
+        query = query.lower()
+        results = []
+        for source in sources:
+            if (query in source.get("title", "").lower() or 
+                query in source.get("author", "").lower() or 
+                query in source.get("annotation", "").lower()):
+                results.append(source)
+        
+        return results
+    except Exception as e:
+        logger.error(f"Error searching sources: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>Добавление источника</title>
+    <style>
+        /* Базовые стили из asana_list.html */
+        body { font-family: 'Inter', sans-serif; line-height: 1.5; margin: 0; padding: 0; background: #f9fafb; color: #222; }
+        .container { max-width: 800px; margin: 0 auto; padding: 2em; }
+        
+        .form-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 2em;
+            margin-top: 2em;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5em;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5em;
+            color: #374151;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 0.7em;
+            font-size: 1em;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: #fff;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+        
+        .btn-primary {
+            display: inline-block;
+            padding: 0.8em 1.5em;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+        
+        .error-message {
+            color: #dc2626;
+            font-size: 0.9em;
+            margin-top: 0.5em;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    {% include "navbar.html" %}
+    
+    <div class="container">
+        <h1>Добавление источника</h1>
+        
+        <div class="form-container">
+            <form id="add-source-form">
+                <div class="form-group">
+                    <label class="form-label" for="author">Автор *</label>
+                    <input type="text" id="author" name="author" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="title">Название *</label>
+                    <input type="text" id="title" name="title" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="publisher">Издательство</label>
+                    <input type="text" id="publisher" name="publisher" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="year">Год издания *</label>
+                    <input type="number" id="year" name="year" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="pages">Количество страниц</label>
+                    <input type="number" id="pages" name="pages" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="annotation">Аннотация</label>
+                    <textarea id="annotation" name="annotation" class="form-control" rows="5"></textarea>
+                </div>
+                
+                <div id="error-message" class="error-message"></div>
+                
+                <button type="submit" class="btn-primary">Добавить источник</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('add-source-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                author: document.getElementById('author').value,
+                title: document.getElementById('title').value,
+                publisher: document.getElementById('publisher').value,
+                year: parseInt(document.getElementById('year').value),
+                pages: parseInt(document.getElementById('pages').value) || null,
+                annotation: document.getElementById('annotation').value
+            };
+            
+            try {
+                const response = await fetch('/sources', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (response.ok) {
+                    window.location.href = '/sources';
+                } else {
+                    const data = await response.json();
+                    const errorElement = document.getElementById('error-message');
+                    errorElement.textContent = data.detail || 'Ошибка при добавлении источника';
+                    errorElement.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                const errorElement = document.getElementById('error-message');
+                errorElement.textContent = 'Ошибка при отправке данных';
+                errorElement.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html> 

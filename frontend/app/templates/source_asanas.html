@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>{{ source.title }} - Асаны</title>
+    <style>
+        /* Базовые стили из asana_list.html */
+        body { font-family: 'Inter', sans-serif; line-height: 1.5; margin: 0; padding: 0; background: #f9fafb; color: #222; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2em; }
+        
+        .source-header {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 2em;
+            margin-bottom: 2em;
+        }
+        
+        .source-title {
+            font-size: 1.8em;
+            font-weight: 600;
+            margin-bottom: 0.5em;
+            color: #111;
+        }
+        
+        .source-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5em;
+            margin-bottom: 1.5em;
+        }
+        
+        .source-detail-item {
+            font-size: 0.95em;
+            color: #6b7280;
+        }
+        
+        .source-detail-label {
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.3em;
+        }
+        
+        .source-annotation {
+            font-size: 1em;
+            color: #4b5563;
+            line-height: 1.6;
+            margin-top: 1.5em;
+            padding-top: 1.5em;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .alphabet-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5em;
+            margin-bottom: 2em;
+            background: white;
+            padding: 1em;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .letter-link {
+            display: inline-block;
+            padding: 0.5em 0.8em;
+            background: #f3f4f6;
+            color: #374151;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+        
+        .letter-link:hover,
+        .letter-link.active {
+            background: #2563eb;
+            color: white;
+        }
+        
+        .letter-section {
+            margin-bottom: 3em;
+        }
+        
+        .letter-heading {
+            font-size: 1.5em;
+            padding-bottom: 0.5em;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 1em;
+            color: #1e3a8a;
+        }
+        
+        .asana-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5em;
+        }
+        
+        .asana-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        
+        .asana-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        
+        .asana-image {
+            height: 200px;
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .asana-content {
+            padding: 1.2em;
+        }
+        
+        .asana-title {
+            font-size: 1.15em;
+            font-weight: 600;
+            margin-bottom: 0.7em;
+            color: #111;
+        }
+        
+        .asana-details {
+            font-size: 0.9em;
+            color: #6b7280;
+        }
+        
+        .btn-primary {
+            display: inline-block;
+            padding: 0.6em 1.2em;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+            text-decoration: none;
+        }
+        
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+        
+        .btn-view {
+            display: inline-block;
+            padding: 0.4em 0.8em;
+            background: #f3f4f6;
+            color: #374151;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9em;
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+        
+        .btn-view:hover {
+            background: #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    {% include "navbar.html" %}
+    
+    <div class="container">
+        <div class="source-header">
+            <h1 class="source-title">{{ source.title }}</h1>
+            
+            <div class="source-details">
+                <div class="source-detail-item">
+                    <div class="source-detail-label">Автор</div>
+                    <div>{{ source.author }}</div>
+                </div>
+                <div class="source-detail-item">
+                    <div class="source-detail-label">Издательство</div>
+                    <div>{{ source.publisher }}</div>
+                </div>
+                <div class="source-detail-item">
+                    <div class="source-detail-label">Год издания</div>
+                    <div>{{ source.year }}</div>
+                </div>
+                {% if source.pages %}
+                <div class="source-detail-item">
+                    <div class="source-detail-label">Количество страниц</div>
+                    <div>{{ source.pages }}</div>
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if source.annotation %}
+            <div class="source-annotation">
+                {{ source.annotation }}
+            </div>
+            {% endif %}
+            
+            {% if is_expert_or_admin %}
+            <div class="source-actions" style="margin-top: 1.5em;">
+                <button class="btn-primary" onclick="showAddPhotoForm()">
+                    <i class="fas fa-plus"></i> Добавить фотографию
+                </button>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Алфавитная навигация -->
+        <div class="alphabet-nav">
+            {% for letter in alphabet %}
+            <a href="#letter-{{ letter }}" class="letter-link {% if letter == current_letter %}active{% endif %}">
+                {{ letter }}
+            </a>
+            {% endfor %}
+        </div>
+        
+        {% for letter, letter_asanas in grouped_asanas.items() %}
+        <div class="letter-section" id="letter-{{ letter }}">
+            <h2 class="letter-heading">{{ letter }}</h2>
+            
+            <div class="asana-grid">
+                {% for asana in letter_asanas %}
+                <div class="asana-card">
+                    {% if asana.photos %}
+                    <div class="asana-image" style="background-image: url('data:image/jpeg;base64,{{ asana.photos[0] }}')"></div>
+                    {% else %}
+                    <div class="asana-image" style="background-color: #f3f4f6; display: flex; justify-content: center; align-items: center;">
+                        <span>Нет фото</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="asana-content">
+                        <h3 class="asana-title">{{ asana.name.ru }}</h3>
+                        <div class="asana-details">
+                            {% if asana.name.sanskrit %}
+                            <p>Санскрит: {{ asana.name.sanskrit }}</p>
+                            {% endif %}
+                        </div>
+                        <a href="/asana/{{ asana.id }}" class="btn-view">Подробнее</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <script>
+        function showAddPhotoForm() {
+            window.location.href = '/asana/add?source={{ source.id }}';
+        }
+    </script>
+</body>
+</html> 

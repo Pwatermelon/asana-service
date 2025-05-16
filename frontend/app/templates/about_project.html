@@ -82,10 +82,12 @@
             <a href="/" class="navbar-brand">Каталог<br>Асан</a>
             <div class="navbar-links">
                 <a href="/asanas" class="nav-link">Асаны</a>
-                <a href="/search" class="nav-link">Поиск</a>
                 <a href="/sources" class="nav-link">Источники</a>
                 <a href="/about" class="nav-link active">О проекте</a>
                 <a href="/settings" class="nav-link">Настройки</a>
+                {% if is_expert_or_admin %}
+                    <a href="/expert-instructions" class="nav-link">Инструкции</a>
+                {% endif %}
             </div>
             <div class="navbar-actions" id="navbar-actions">
                 <!-- Динамически заполняется JavaScript -->
@@ -121,76 +123,49 @@
     </footer>
     
     <script>
-    // Добавление динамических элементов в навбар в зависимости от роли пользователя
-    function updateNavbar() {
-        const navbarActions = document.getElementById('navbar-actions');
-        const token = localStorage.getItem('token');
-        const userRole = localStorage.getItem('user_role');
+    // Функция для проверки авторизации
+    async function checkAuth() {
+        try {
+            const response = await fetch('/api/auth/check');
+            const data = await response.json();
+            return {
+                isAuthenticated: data.is_authenticated,
+                userRole: data.role
+            };
+        } catch (error) {
+            console.error('Error checking auth:', error);
+            return {
+                isAuthenticated: false,
+                userRole: null
+            };
+        }
+    }
+
+    // При загрузке страницы
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Проверяем авторизацию
+        const { isAuthenticated, userRole } = await checkAuth();
+        window.isExpertOrAdmin = userRole === 'admin' || userRole === 'expert';
         
-        if (token) {
-            // Для экспертов и админов показываем дополнительные кнопки
-            if (userRole === 'admin' || userRole === 'expert') {
+        // Обновляем навбар
+        const navbarActions = document.getElementById('navbar-actions');
+        if (isAuthenticated) {
+            if (window.isExpertOrAdmin) {
                 navbarActions.innerHTML = `
-                    <a href="/add-asana" class="btn-primary">Добавить асану</a>
+                    <a href="/asana/add" class="btn-primary">Добавить асану</a>
+                    <a href="/sources/add" class="btn-primary" style="margin-left: 10px;">Добавить источник</a>
                     <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
                 `;
             } else {
                 navbarActions.innerHTML = `
                     <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
                 `;
-            }
-            
-            // Показываем элементы управления админу
-            if (userRole === 'admin') {
-                document.getElementById('admin-controls').style.display = 'block';
             }
         } else {
             navbarActions.innerHTML = `
                 <a href="/login" class="btn-primary">Войти</a>
             `;
         }
-    }
-    
-    // Обработка редактирования
-    document.getElementById('btn-edit').addEventListener('click', function() {
-        document.getElementById('edit-form').style.display = 'block';
-    });
-    
-    document.getElementById('btn-cancel').addEventListener('click', function() {
-        document.getElementById('edit-form').style.display = 'none';
-    });
-    
-    document.getElementById('btn-save').addEventListener('click', async function() {
-        const token = localStorage.getItem('token');
-        const content = document.getElementById('edit-content').value;
-        
-        try {
-            const response = await fetch('/about-project', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ content })
-            });
-            
-            if (response.ok) {
-                // Обновляем контент на странице
-                document.getElementById('about-text').innerHTML = content;
-                document.getElementById('edit-form').style.display = 'none';
-                alert('Информация о проекте обновлена');
-            } else {
-                alert('Ошибка при сохранении');
-            }
-        } catch (error) {
-            console.error('Error saving content:', error);
-            alert('Ошибка при сохранении');
-        }
-    });
-    
-    // При загрузке страницы
-    document.addEventListener('DOMContentLoaded', function() {
-        updateNavbar();
     });
     </script>
 </body>

@@ -210,37 +210,35 @@
     <div class="container">
         <div class="page-header">
             <h1 class="page-title">Настройки</h1>
+            <p class="page-description">Управление онтологией и другими настройками системы.</p>
         </div>
         
         <div class="settings-container">
             <div class="settings-section">
                 <h2 class="settings-title">Онтология</h2>
-                <p class="settings-description">
-                    Управление файлом онтологии асан
-                </p>
+                <p class="settings-description">Скачайте или загрузите файл онтологии.</p>
                 
-                <div>
-                    <a href="/download-ontology" class="download-link">Скачать онтологию</a>
+                <div class="form-group">
+                    <a href="/download-ontology" class="download-link">
+                        <i class="fas fa-download"></i> Скачать онтологию
+                    </a>
                 </div>
                 
-                {% if user_role == 'admin' %}
-                    <div class="admin-only">
-                        <div class="admin-only-label">Только для администраторов</div>
-                        <form id="upload-ontology-form" enctype="multipart/form-data">
-                            <div class="form-group">
-                                <label for="ontology-file" class="form-label">Загрузить файл онтологии:</label>
-                                <div class="file-input">
-                                    <label for="ontology-file" class="file-input-label">Выбрать файл</label>
-                                    <input type="file" id="ontology-file" name="ontology_file" accept=".owl,.rdf,.xml">
-                                    <span id="selected-file">Файл не выбран</span>
-                                </div>
-                            </div>
-                            <div class="form-actions">
-                                <button type="submit" class="btn-primary">Загрузить</button>
-                            </div>
-                        </form>
-                        <div id="upload-message" class="message" style="display: none;"></div>
-                    </div>
+                {% if is_admin %}
+                <div class="admin-only">
+                    <div class="admin-only-label">Только для администраторов</div>
+                    <form id="upload-ontology-form" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label class="file-input-label" for="ontology-file">
+                                <i class="fas fa-upload"></i> Выбрать файл онтологии
+                            </label>
+                            <input type="file" id="ontology-file" name="ontology_file" accept=".owl,.rdf,.xml">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">Загрузить онтологию</button>
+                        </div>
+                    </form>
+                </div>
                 {% endif %}
             </div>
             

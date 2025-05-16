@@ -223,14 +223,24 @@
         <div class="navbar-content">
             <a href="/" class="navbar-brand">Каталог<br>Асан</a>
             <div class="navbar-links">
-                <a href="/asanas" class="nav-link active">Асаны</a>
+                <a href="/asanas" class="nav-link active">Каталог асан</a>
                 <a href="/sources" class="nav-link">Источники</a>
-                <a href="/about" class="nav-link">О проекте</a>
-                <a href="/expert-instructions" class="nav-link">Инструкции</a>
                 <a href="/settings" class="nav-link">Настройки</a>
+                <a href="/about" class="nav-link">О проекте</a>
+                {% if is_expert_or_admin %}
+                    <a href="/expert-instructions" class="nav-link">Инструкции</a>
+                {% endif %}
             </div>
             <div class="navbar-actions" id="navbar-actions">
-                <!-- Динамически заполняется JavaScript -->
+                {% if is_expert_or_admin %}
+                    <a href="/asana/add" class="btn-primary">Добавить асану</a>
+                    <a href="/sources/add" class="btn-primary" style="margin-left: 10px;">Добавить источник</a>
+                {% endif %}
+                {% if is_authenticated %}
+                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                {% else %}
+                    <a href="/login" class="btn-primary">Войти</a>
+                {% endif %}
             </div>
         </div>
     </nav>
@@ -238,9 +248,7 @@
     <div class="container">
         <div class="page-header">
             <h1 class="page-title">Каталог асан</h1>
-            <p class="page-description">
-                Изучайте асаны из различных источников йоги с фотографиями и описаниями
-            </p>
+            <p class="page-description">Полный каталог асан с описаниями, фотографиями и источниками.</p>
             
             <!-- Форма поиска -->
             <div class="search-form-container">
@@ -371,114 +379,146 @@
     </footer>
     
     <script>
-    // Добавление динамических элементов в навбар в зависимости от роли пользователя
-    function updateNavbar() {
-        const navbarActions = document.getElementById('navbar-actions');
-        const token = localStorage.getItem('token');
-        const userRole = localStorage.getItem('user_role');
-        
-        if (token) {
-            // Для экспертов и админов показываем дополнительные кнопки
-            if (userRole === 'admin' || userRole === 'expert') {
-                navbarActions.innerHTML = `
-                    <a href="/asana/add" class="btn-primary">Добавить асану</a>
-                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
-                `;
-                
-                // Показываем кнопки удаления
-                showDeleteButtons();
-            } else {
-                navbarActions.innerHTML = `
-                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
-                `;
-                
-                // Скрываем кнопки удаления
-                hideDeleteButtons();
-            }
-        } else {
-            navbarActions.innerHTML = `
-                <a href="/login" class="btn-primary">Войти</a>
-            `;
-            
-            // Скрываем кнопки удаления
-            hideDeleteButtons();
-        }
-    }
-    
-    // Показать/скрыть кнопки удаления
-    function showDeleteButtons() {
-        const deleteButtons = document.querySelectorAll('.delete-asana');
-        deleteButtons.forEach(button => {
-            button.style.display = 'inline-block';
-        });
-    }
-    
-    function hideDeleteButtons() {
-        const deleteButtons = document.querySelectorAll('.delete-asana');
-        deleteButtons.forEach(button => {
-            button.style.display = 'none';
-        });
-    }
-    
-    // Обработка удаления асаны
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('delete-asana')) {
-            const asanaId = e.target.dataset.id;
-            const asanaName = e.target.dataset.name;
-            
-            if (confirm(`Вы уверены, что хотите удалить асану "${asanaName}"?`)) {
-                deleteAsana(asanaId);
-            }
-        }
-    });
-    
-    async function deleteAsana(asanaId) {
-        const token = localStorage.getItem('token');
-        
+    // Функция для проверки авторизации
+    async function checkAuth() {
         try {
-            const response = await fetch(`/asanas?uri=${encodeURIComponent(asanaId)}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (response.ok) {
-                // Удаляем карточку асаны из DOM
-                const asanaCard = document.querySelector(`.delete-asana[data-id="${asanaId}"]`).closest('.asana-card');
-                asanaCard.remove();
-                
-                alert('Асана успешно удалена');
-            } else {
-                alert('Ошибка при удалении асаны');
-            }
+            const response = await fetch('/api/auth/check');
+            const data = await response.json();
+            return {
+                isAuthenticated: data.is_authenticated,
+                userRole: data.role
+            };
         } catch (error) {
-            console.error('Error deleting asana:', error);
-            alert('Ошибка при удалении асаны');
+            console.error('Error checking auth:', error);
+            return {
+                isAuthenticated: false,
+                userRole: null
+            };
         }
     }
-    
+
     // Обработка отправки формы поиска
     document.getElementById('search-form')?.addEventListener('submit', function(e) {
         e.preventDefault();
         
         const query = document.getElementById('search-query').value.trim();
-        
         if (!query) {
             return;
         }
-        
-        // Создаем URL параметры
-        const searchParams = new URLSearchParams();
-        searchParams.append('query', query);
-        
-        // Переходим на страницу с результатами поиска
-        window.location.href = `/asanas?${searchParams.toString()}`;
+
+        // Выполняем поиск через API
+        fetch(`/api/asanas/search?query=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                // Обновляем содержимое страницы с результатами
+                const container = document.querySelector('.container');
+                
+                // Создаем заголовок результатов
+                const resultsHeader = document.createElement('div');
+                resultsHeader.className = 'letter-section';
+                resultsHeader.innerHTML = `
+                    <h2 class="letter-heading">Результаты поиска: ${query}</h2>
+                `;
+                
+                // Создаем грид для результатов
+                const resultsGrid = document.createElement('div');
+                resultsGrid.className = 'asana-grid';
+                
+                if (data.length === 0) {
+                    resultsGrid.innerHTML = '<div class="no-asanas"><p>Асаны не найдены</p></div>';
+                } else {
+                    // Добавляем найденные асаны
+                    data.forEach(asana => {
+                        resultsGrid.innerHTML += `
+                            <div class="asana-card">
+                                <div class="asana-image" style="background-image: url('data:image/jpeg;base64,${asana.photo}')"></div>
+                                <div class="asana-content">
+                                    <h3 class="asana-title">${asana.name.ru}</h3>
+                                    <div class="asana-details">
+                                        ${asana.name.sanskrit ? `<p>Санскрит: ${asana.name.sanskrit}</p>` : ''}
+                                        ${asana.name.en ? `<p>Английский: ${asana.name.en}</p>` : ''}
+                                    </div>
+                                    <div class="asana-actions">
+                                        <a href="/asana/${asana.id}" class="btn-view">Подробнее</a>
+                                        ${window.isExpertOrAdmin ? `
+                                            <button class="btn-delete delete-asana" data-id="${asana.id}" data-name="${asana.name.ru}">Удалить</button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                
+                // Очищаем контейнер и добавляем результаты
+                container.innerHTML = '';
+                container.appendChild(resultsHeader);
+                container.appendChild(resultsGrid);
+            })
+            .catch(error => {
+                console.error('Error searching asanas:', error);
+                alert('Ошибка при поиске асан');
+            });
     });
-    
+
+    // Обработка удаления асаны
+    document.addEventListener('click', async function(e) {
+        if (e.target.classList.contains('delete-asana')) {
+            const asanaId = e.target.dataset.id;
+            const asanaName = e.target.dataset.name;
+            
+            if (confirm(`Вы уверены, что хотите удалить асану "${asanaName}"?`)) {
+                try {
+                    const response = await fetch(`/api/asanas/${asanaId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        // Удаляем карточку асаны из DOM
+                        e.target.closest('.asana-card').remove();
+                        alert('Асана успешно удалена');
+                    } else {
+                        alert('Ошибка при удалении асаны');
+                    }
+                } catch (error) {
+                    console.error('Error deleting asana:', error);
+                    alert('Ошибка при удалении асаны');
+                }
+            }
+        }
+    });
+
     // При загрузке страницы
-    document.addEventListener('DOMContentLoaded', function() {
-        updateNavbar();
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Проверяем авторизацию
+        const { isAuthenticated, userRole } = await checkAuth();
+        window.isExpertOrAdmin = userRole === 'admin' || userRole === 'expert';
+        
+        // Обновляем навбар
+        const navbarActions = document.getElementById('navbar-actions');
+        if (isAuthenticated) {
+            if (window.isExpertOrAdmin) {
+                navbarActions.innerHTML = `
+                    <a href="/asana/add" class="btn-primary">Добавить асану</a>
+                    <a href="/sources/add" class="btn-primary" style="margin-left: 10px;">Добавить источник</a>
+                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                `;
+            } else {
+                navbarActions.innerHTML = `
+                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                `;
+            }
+        } else {
+            navbarActions.innerHTML = `
+                <a href="/login" class="btn-primary">Войти</a>
+            `;
+        }
+        
+        // Показываем/скрываем кнопки удаления
+        const deleteButtons = document.querySelectorAll('.delete-asana');
+        deleteButtons.forEach(button => {
+            button.style.display = window.isExpertOrAdmin ? 'inline-block' : 'none';
+        });
     });
     </script>
 </body>

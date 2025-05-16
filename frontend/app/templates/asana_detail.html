@@ -217,121 +217,90 @@
         <div class="asana-detail">
             <div class="asana-header">
                 <h1 class="asana-title">{{ asana.name.ru }}</h1>
-                {% if asana.name.sanskrit %}
-                    <div class="asana-subtitle">{{ asana.name.sanskrit }}</div>
+                {% if is_expert_or_admin %}
+                <div class="admin-actions">
+                    <a href="/asana/{{ asana.id }}/edit" class="btn-primary">Редактировать</a>
+                    <button class="btn-primary" onclick="showAddPhotoForm()">Добавить фотографию</button>
+                </div>
                 {% endif %}
             </div>
             
             <div class="asana-info">
-                <div class="asana-photos">
-                    {% if asana.photos and asana.photos|length > 0 %}
-                        <img src="data:image/jpeg;base64,{{ asana.photos[0] }}" alt="{{ asana.name.ru }}" class="main-photo" id="main-photo">
-                        
-                        {% if asana.photos|length > 1 %}
-                            <div class="photo-gallery">
-                                {% for photo in asana.photos %}
-                                    <img src="data:image/jpeg;base64,{{ photo }}" alt="{{ asana.name.ru }}" class="gallery-item" onclick="changeMainPhoto(this)">
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    {% else %}
-                        <div class="main-photo" style="background-color: #e5e7eb; display: flex; justify-content: center; align-items: center;">
-                            <p>Фото отсутствует</p>
-                        </div>
-                    {% endif %}
-                </div>
-                
                 <div class="asana-details">
                     <div class="detail-section">
                         <h2 class="detail-title">Названия</h2>
-                        {% if asana.name.ru %}
-                            <div class="detail-item">
-                                <strong>Русское:</strong> {{ asana.name.ru }}
-                            </div>
-                        {% endif %}
-                        
-                        {% if asana.name.en %}
-                            <div class="detail-item">
-                                <strong>Английское:</strong> {{ asana.name.en }}
-                            </div>
-                        {% endif %}
-                        
+                        <div class="detail-item">
+                            <strong>На русском:</strong> {{ asana.name.ru }}
+                        </div>
                         {% if asana.name.sanskrit %}
-                            <div class="detail-item">
-                                <strong>Санскрит:</strong> {{ asana.name.sanskrit }}
-                            </div>
+                        <div class="detail-item">
+                            <strong>На санскрите:</strong> {{ asana.name.sanskrit }}
+                        </div>
                         {% endif %}
-                        
                         {% if asana.name.transliteration %}
-                            <div class="detail-item">
-                                <strong>Транслитерация:</strong> {{ asana.name.transliteration }}
-                            </div>
+                        <div class="detail-item">
+                            <strong>Транслитерация:</strong> {{ asana.name.transliteration }}
+                        </div>
                         {% endif %}
-                        
                         {% if asana.name.translation %}
-                            <div class="detail-item">
-                                <strong>Перевод:</strong> {{ asana.name.translation }}
-                            </div>
+                        <div class="detail-item">
+                            <strong>Перевод названия:</strong> {{ asana.name.translation }}
+                        </div>
                         {% endif %}
                     </div>
-                    
-                    {% if asana.source %}
-                        <div class="detail-section">
-                            <h2 class="detail-title">Источник</h2>
-                            <div class="detail-item">
-                                <strong>Название:</strong> {{ asana.source.title }}
+                </div>
+                
+                <div class="asana-photos">
+                    {% if asana.photos %}
+                    <div class="photo-gallery">
+                        {% for photo in asana.photos %}
+                        <div class="photo-container">
+                            <img src="data:image/jpeg;base64,{{ photo.image }}" alt="{{ asana.name.ru }}" class="gallery-item">
+                            <div class="photo-source">
+                                <a href="/sources/{{ photo.source.id }}">{{ photo.source.author }} - {{ photo.source.title }}</a>
                             </div>
-                            <div class="detail-item">
-                                <strong>Автор:</strong> {{ asana.source.author }}
-                            </div>
-                            <div class="detail-item">
-                                <strong>Год:</strong> {{ asana.source.year }}
-                            </div>
-                            
-                            {% if asana.source.publisher %}
-                                <div class="detail-item">
-                                    <strong>Издательство:</strong> {{ asana.source.publisher }}
-                                </div>
-                            {% endif %}
-                            
-                            {% if asana.source.pages %}
-                                <div class="detail-item">
-                                    <strong>Страницы:</strong> {{ asana.source.pages }}
-                                </div>
-                            {% endif %}
-                            
-                            {% if asana.source.annotation %}
-                                <div class="detail-item">
-                                    <strong>Аннотация:</strong> {{ asana.source.annotation }}
-                                </div>
-                            {% endif %}
                         </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p>Фотографии отсутствуют</p>
                     {% endif %}
                 </div>
             </div>
             
-            {% if user_role in ['admin', 'expert'] %}
-                <div class="add-photo-form">
-                    <h3 class="form-title">Добавить новое фото</h3>
-                    <form id="add-photo-form" enctype="multipart/form-data">
-                        <div class="form-group">
-                            <label for="source_id" class="form-label">Источник:</label>
-                            <select id="source_id" name="source_id" class="form-select" required>
-                                <option value="">-- Выберите источник --</option>
-                                {% for source in sources %}
-                                    <option value="{{ source.id }}">{{ source.title }} ({{ source.author }}, {{ source.year }})</option>
-                                {% endfor %}
-                            </select>
+            {% if is_expert_or_admin %}
+            <div id="add-photo-form" class="add-photo-form" style="display: none;">
+                <h3 class="form-title">Добавление фотографии</h3>
+                <form id="photo-form" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label class="form-label" for="source">Источник *</label>
+                        <select id="source" name="source" class="form-select" required>
+                            <option value="">Выберите источник</option>
+                            {% for source in sources %}
+                            <option value="{{ source.id }}">{{ source.author }} - {{ source.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div id="existing-photo-warning" style="display: none;" class="warning-message">
+                        В выбранном источнике уже есть фото этой асаны. Хотите добавить другое фото?
+                        <div class="warning-actions">
+                            <button type="button" onclick="continueAddPhoto()">Да</button>
+                            <button type="button" onclick="cancelAddPhoto()">Нет</button>
                         </div>
-                        <div class="form-group">
-                            <label for="photo" class="form-label">Фото:</label>
-                            <input type="file" id="photo" name="photo" class="form-file" accept="image/*" required multiple>
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn-primary">Добавить фото</button>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+                    
+                    <div id="photo-upload-section" class="form-group">
+                        <label class="form-label" for="photos">Фотографии *</label>
+                        <input type="file" id="photos" name="photos" class="form-file" multiple accept="image/*" required>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Добавить</button>
+                        <button type="button" class="btn-secondary" onclick="hideAddPhotoForm()">Отмена</button>
+                    </div>
+                </form>
+            </div>
             {% endif %}
         </div>
     </div>
@@ -425,6 +394,73 @@
     // При загрузке страницы
     document.addEventListener('DOMContentLoaded', function() {
         updateNavbar();
+    });
+    
+    function showAddPhotoForm() {
+        document.getElementById('add-photo-form').style.display = 'block';
+    }
+    
+    function hideAddPhotoForm() {
+        document.getElementById('add-photo-form').style.display = 'none';
+    }
+    
+    document.getElementById('source')?.addEventListener('change', async function(e) {
+        const sourceId = e.target.value;
+        if (!sourceId) return;
+        
+        try {
+            const response = await fetch(`/asana/{{ asana.id }}/check-photo/${sourceId}`);
+            const data = await response.json();
+            
+            if (data.hasPhoto) {
+                document.getElementById('existing-photo-warning').style.display = 'block';
+                document.getElementById('photo-upload-section').style.display = 'none';
+            } else {
+                document.getElementById('existing-photo-warning').style.display = 'none';
+                document.getElementById('photo-upload-section').style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error checking existing photo:', error);
+        }
+    });
+    
+    function continueAddPhoto() {
+        document.getElementById('existing-photo-warning').style.display = 'none';
+        document.getElementById('photo-upload-section').style.display = 'block';
+    }
+    
+    function cancelAddPhoto() {
+        document.getElementById('source').value = '';
+        document.getElementById('existing-photo-warning').style.display = 'none';
+    }
+    
+    document.getElementById('photo-form')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData();
+        formData.append('source_id', document.getElementById('source').value);
+        
+        const photoFiles = document.getElementById('photos').files;
+        for (let i = 0; i < photoFiles.length; i++) {
+            formData.append('photos', photoFiles[i]);
+        }
+        
+        try {
+            const response = await fetch('/asana/{{ asana.id }}/add-photo', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                const data = await response.json();
+                alert(data.detail || 'Ошибка при добавлении фотографии');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Ошибка при отправке данных');
+        }
     });
     </script>
 </body>

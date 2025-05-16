@@ -274,108 +274,68 @@
     
     <div class="container">
         <div class="page-header">
-            <h1 class="page-title">Источники асан</h1>
-            <p class="page-description">
-                Библиографические источники, используемые в каталоге
-            </p>
-            {% if user_role in ['admin', 'expert'] %}
-                <div id="add-source-btn-container">
-                    <button id="add-source-btn" class="btn-primary">Добавить источник</button>
-                </div>
+            <h1 class="page-title">Источники</h1>
+            <p class="page-description">Список источников с описаниями и асанами.</p>
+            
+            <!-- Форма поиска -->
+            <div class="search-form-container">
+                <form id="search-form" class="search-form">
+                    <div class="search-input-container">
+                        <input type="text" id="search-query" name="query" placeholder="Поиск источников..." class="search-input">
+                        <button type="submit" class="search-button">Найти</button>
+                    </div>
+                </form>
+            </div>
+            
+            {% if is_expert_or_admin %}
+            <a href="/sources/add" class="btn-primary">
+                <i class="fas fa-plus"></i> Добавить источник
+            </a>
             {% endif %}
         </div>
         
-        <div id="add-source-form" class="add-source-form">
-            <h2 class="form-title">Добавление нового источника</h2>
-            <form id="source-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="title" class="form-label">Название:</label>
-                        <input type="text" id="title" name="title" class="form-control" required>
+        <div class="sources-grid">
+            {% for source in sources %}
+            <div class="source-card">
+                <div class="source-header">
+                    <h2 class="source-title">{{ source.title }}</h2>
+                    <div class="source-author">{{ source.author }}</div>
+                </div>
+                
+                <div class="source-content">
+                    <div class="source-details">
+                        <div class="source-detail-item">
+                            <span class="source-detail-label">Издательство:</span>
+                            <span>{{ source.publisher }}</span>
+                        </div>
+                        <div class="source-detail-item">
+                            <span class="source-detail-label">Год издания:</span>
+                            <span>{{ source.year }}</span>
+                        </div>
+                        {% if source.pages %}
+                        <div class="source-detail-item">
+                            <span class="source-detail-label">Страниц:</span>
+                            <span>{{ source.pages }}</span>
+                        </div>
+                        {% endif %}
                     </div>
-                    <div class="form-group">
-                        <label for="author" class="form-label">Автор:</label>
-                        <input type="text" id="author" name="author" class="form-control" required>
+                    
+                    {% if source.annotation %}
+                    <div class="source-annotation">
+                        {{ source.annotation }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="source-actions">
+                        <a href="/sources/{{ source.id }}/asanas" class="btn-view">Посмотреть асаны</a>
+                        {% if is_expert_or_admin %}
+                        <button class="btn-delete delete-source" data-id="{{ source.id }}" data-title="{{ source.title }}">Удалить</button>
+                        {% endif %}
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="year" class="form-label">Год издания:</label>
-                        <input type="number" id="year" name="year" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="publisher" class="form-label">Издательство:</label>
-                        <input type="text" id="publisher" name="publisher" class="form-control">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="pages" class="form-label">Количество страниц:</label>
-                        <input type="number" id="pages" name="pages" class="form-control">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="annotation" class="form-label">Аннотация:</label>
-                    <textarea id="annotation" name="annotation" class="form-control" rows="3"></textarea>
-                </div>
-                <div class="form-actions">
-                    <button type="button" id="cancel-add-source" class="btn-cancel">Отмена</button>
-                    <button type="submit" class="btn-primary">Добавить</button>
-                </div>
-            </form>
+            </div>
+            {% endfor %}
         </div>
-        
-        {% if sources and sources|length > 0 %}
-            <div class="sources-grid">
-                {% for source in sources %}
-                    <div class="source-card">
-                        <div class="source-header">
-                            <h3 class="source-title">{{ source.title }}</h3>
-                            <div class="source-author">{{ source.author }}</div>
-                        </div>
-                        <div class="source-content">
-                            <div class="source-details">
-                                <div class="source-detail-item">
-                                    <span class="source-detail-label">Год издания:</span>
-                                    <span>{{ source.year }}</span>
-                                </div>
-                                
-                                {% if source.publisher %}
-                                    <div class="source-detail-item">
-                                        <span class="source-detail-label">Издательство:</span>
-                                        <span>{{ source.publisher }}</span>
-                                    </div>
-                                {% endif %}
-                                
-                                {% if source.pages %}
-                                    <div class="source-detail-item">
-                                        <span class="source-detail-label">Страниц:</span>
-                                        <span>{{ source.pages }}</span>
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            {% if source.annotation %}
-                                <div class="source-annotation">
-                                    {{ source.annotation }}
-                                </div>
-                            {% endif %}
-                            
-                            <div class="source-actions">
-                                <a href="/asanas/by-source/{{ source.id }}" class="btn-view">Асаны из источника</a>
-                                {% if user_role in ['admin', 'expert'] %}
-                                    <button class="btn-delete delete-source" data-id="{{ source.id }}" data-title="{{ source.title }}">Удалить</button>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="no-sources">
-                <p>Источники не найдены</p>
-            </div>
-        {% endif %}
     </div>
     
     <footer>
@@ -383,144 +343,121 @@
     </footer>
     
     <script>
-    // Добавление динамических элементов в навбар в зависимости от роли пользователя
-    function updateNavbar() {
-        const navbarActions = document.getElementById('navbar-actions');
-        const token = localStorage.getItem('token');
-        const userRole = localStorage.getItem('user_role');
+    // Функция для проверки авторизации
+    async function checkAuth() {
+        try {
+            const response = await fetch('/api/auth/check');
+            const data = await response.json();
+            return {
+                isAuthenticated: data.is_authenticated,
+                userRole: data.role
+            };
+        } catch (error) {
+            console.error('Error checking auth:', error);
+            return {
+                isAuthenticated: false,
+                userRole: null
+            };
+        }
+    }
+
+    // Обработка отправки формы поиска
+    document.getElementById('search-form')?.addEventListener('submit', function(e) {
+        e.preventDefault();
         
-        if (token) {
-            // Для экспертов и админов показываем дополнительные кнопки
-            if (userRole === 'admin' || userRole === 'expert') {
+        const query = document.getElementById('search-query').value.trim();
+        if (!query) {
+            return;
+        }
+
+        // Выполняем поиск через API
+        fetch(`/api/sources/search?query=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                // Обновляем содержимое страницы с результатами
+                const container = document.querySelector('.sources-grid');
+                container.innerHTML = ''; // Очищаем текущее содержимое
+                
+                if (data.length === 0) {
+                    container.innerHTML = '<div class="no-sources"><p>Источники не найдены</p></div>';
+                    return;
+                }
+                
+                // Добавляем найденные источники
+                data.forEach(source => {
+                    container.innerHTML += `
+                        <div class="source-card">
+                            <div class="source-header">
+                                <h2 class="source-title">${source.title}</h2>
+                                <div class="source-author">${source.author}</div>
+                            </div>
+                            
+                            <div class="source-content">
+                                <div class="source-details">
+                                    <div class="source-detail-item">
+                                        <span class="source-detail-label">Издательство:</span>
+                                        <span>${source.publisher || ''}</span>
+                                    </div>
+                                    <div class="source-detail-item">
+                                        <span class="source-detail-label">Год издания:</span>
+                                        <span>${source.year}</span>
+                                    </div>
+                                    ${source.pages ? `
+                                    <div class="source-detail-item">
+                                        <span class="source-detail-label">Страниц:</span>
+                                        <span>${source.pages}</span>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                
+                                ${source.annotation ? `
+                                <div class="source-annotation">
+                                    ${source.annotation}
+                                </div>
+                                ` : ''}
+                                
+                                <div class="source-actions">
+                                    <a href="/sources/${source.id}/asanas" class="btn-view">Посмотреть асаны</a>
+                                    ${window.isExpertOrAdmin ? `
+                                    <button class="btn-delete delete-source" data-id="${source.id}" data-title="${source.title}">Удалить</button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            })
+            .catch(error => {
+                console.error('Error searching sources:', error);
+                alert('Ошибка при поиске источников');
+            });
+    });
+
+    // При загрузке страницы
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Проверяем авторизацию
+        const { isAuthenticated, userRole } = await checkAuth();
+        window.isExpertOrAdmin = userRole === 'admin' || userRole === 'expert';
+        
+        // Обновляем навбар
+        const navbarActions = document.getElementById('navbar-actions');
+        if (isAuthenticated) {
+            if (window.isExpertOrAdmin) {
                 navbarActions.innerHTML = `
                     <a href="/asana/add" class="btn-primary">Добавить асану</a>
+                    <a href="/sources/add" class="btn-primary" style="margin-left: 10px;">Добавить источник</a>
                     <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
                 `;
-                
-                // Показываем кнопки удаления
-                showDeleteButtons();
-                // Показываем кнопку добавления источника
-                document.getElementById('add-source-btn-container').style.display = 'block';
             } else {
                 navbarActions.innerHTML = `
                     <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
                 `;
-                
-                // Скрываем кнопки удаления
-                hideDeleteButtons();
             }
         } else {
             navbarActions.innerHTML = `
                 <a href="/login" class="btn-primary">Войти</a>
             `;
-            
-            // Скрываем кнопки удаления
-            hideDeleteButtons();
         }
-    }
-    
-    // Показать/скрыть кнопки удаления
-    function showDeleteButtons() {
-        const deleteButtons = document.querySelectorAll('.delete-source');
-        deleteButtons.forEach(button => {
-            button.style.display = 'inline-block';
-        });
-    }
-    
-    function hideDeleteButtons() {
-        const deleteButtons = document.querySelectorAll('.delete-source');
-        deleteButtons.forEach(button => {
-            button.style.display = 'none';
-        });
-    }
-    
-    // Обработка добавления источника
-    document.getElementById('add-source-btn')?.addEventListener('click', function() {
-        document.getElementById('add-source-form').style.display = 'block';
-    });
-    
-    document.getElementById('cancel-add-source')?.addEventListener('click', function() {
-        document.getElementById('add-source-form').style.display = 'none';
-    });
-    
-    document.getElementById('source-form')?.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const formData = {
-            title: document.getElementById('title').value,
-            author: document.getElementById('author').value,
-            year: parseInt(document.getElementById('year').value),
-            publisher: document.getElementById('publisher').value,
-            pages: document.getElementById('pages').value ? parseInt(document.getElementById('pages').value) : undefined,
-            annotation: document.getElementById('annotation').value
-        };
-        
-        const token = localStorage.getItem('token');
-        
-        try {
-            const response = await fetch('/sources', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(formData)
-            });
-            
-            if (response.ok) {
-                alert('Источник успешно добавлен');
-                window.location.reload();
-            } else {
-                const data = await response.json();
-                alert(data.detail || 'Ошибка при добавлении источника');
-            }
-        } catch (error) {
-            console.error('Error adding source:', error);
-            alert('Ошибка при добавлении источника');
-        }
-    });
-    
-    // Обработка удаления источника
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('delete-source')) {
-            const sourceId = e.target.dataset.id;
-            const sourceTitle = e.target.dataset.title;
-            
-            if (confirm(`Вы уверены, что хотите удалить источник "${sourceTitle}"?`)) {
-                deleteSource(sourceId);
-            }
-        }
-    });
-    
-    async function deleteSource(sourceId) {
-        const token = localStorage.getItem('token');
-        
-        try {
-            const response = await fetch(`/sources/${sourceId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (response.ok) {
-                // Удаляем карточку источника из DOM
-                const sourceCard = document.querySelector(`.delete-source[data-id="${sourceId}"]`).closest('.source-card');
-                sourceCard.remove();
-                
-                alert('Источник успешно удален');
-            } else {
-                alert('Ошибка при удалении источника');
-            }
-        } catch (error) {
-            console.error('Error deleting source:', error);
-            alert('Ошибка при удалении источника');
-        }
-    }
-    
-    // При загрузке страницы
-    document.addEventListener('DOMContentLoaded', function() {
-        updateNavbar();
     });
     </script>
 </body>
