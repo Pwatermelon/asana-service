@@ -8,218 +8,58 @@
     <title>Добавление асаны</title>
     <style>
     body { font-family: 'Inter', sans-serif; line-height: 1.5; margin: 0; padding: 0; background: #f9fafb; color: #222; margin-bottom: 60px; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 1em 2em; }
-    
-    .navbar { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.03); padding: 0.7em 0; position: sticky; top: 0; z-index: 1000; }
-    .navbar-content { display: flex; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 2em; }
-    .navbar-brand { font-size: 1.6em; font-weight: 700; margin-right: 2em; color: #111; text-decoration: none; line-height: 1; }
-    .navbar-links { display: flex; gap: 1.5em; flex: 1; justify-content: center; }
-    .nav-link { color: #222; text-decoration: none; font-size: 1.08em; padding: 0.2em 0.5em; border-radius: 4px; transition: background 0.15s; }
-    .nav-link.active, .nav-link:hover { color: #2563eb; background: #f2f6ff; }
-    
-    .btn-primary { 
-        display: inline-block;
-        padding: 0.6em 1.2em;
-        background: #2563eb; 
-        color: #fff; 
-        border: none; 
-        border-radius: 6px; 
-        font-size: 0.9em; 
-        font-weight: 500; 
-        cursor: pointer; 
-        transition: background 0.15s;
-        text-decoration: none;
-    }
-    .btn-primary:hover { background: #1d4ed8; }
-    
-    .btn-logout {
-        display: inline-block;
-        padding: 0.6em 1.2em;
-        background: #f3f4f6;
-        color: #374151;
-        border: none;
-        border-radius: 6px;
-        font-size: 0.9em;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background 0.15s;
-        text-decoration: none;
-        margin-left: 1em;
-    }
-    .btn-logout:hover { background: #e5e7eb; }
-    
-    .page-header { margin: 2em 0 1.5em 0; }
-    .page-title { font-size: 1.8em; margin-bottom: 0.5em; color: #111; }
-    .page-description { font-size: 1.05em; color: #4b5563; margin-bottom: 1.5em; }
-    
-    .form-container {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        margin: 2em 0;
-        padding: 2em;
-    }
-    
-    .form-section {
-        margin-bottom: 2em;
-        padding-bottom: 1.5em;
-        border-bottom: 1px solid #e5e7eb;
-    }
-    
-    .form-section-title {
-        font-size: 1.3em;
-        font-weight: 600;
-        margin-bottom: 1em;
-        color: #111;
-    }
-    
-    .form-group {
-        margin-bottom: 1.2em;
-    }
-    
-    .form-row {
-        display: flex;
-        gap: 1.5em;
-        margin-bottom: 1.2em;
-    }
-    
-    .form-row .form-group {
-        flex: 1;
-        margin-bottom: 0;
-    }
-    
-    .form-label {
-        display: block;
-        font-weight: 500;
-        margin-bottom: 0.5em;
-        color: #374151;
-    }
-    
-    .form-control {
-        width: 100%;
-        padding: 0.7em;
-        font-size: 1em;
-        border: 1px solid #d1d5db;
-        border-radius: 6px;
-        background: #fff;
-    }
-    
-    .form-control:focus {
-        outline: none;
-        border-color: #2563eb;
-        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-    }
-    
-    .form-select {
-        width: 100%;
-        padding: 0.7em;
-        font-size: 1em;
-        border: 1px solid #d1d5db;
-        border-radius: 6px;
-        background: #fff;
-    }
-    
-    .form-select:focus {
-        outline: none;
-        border-color: #2563eb;
-        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-    }
-    
-    .radio-group {
-        margin: 0.5em 0 1em 0;
-    }
-    
-    .radio-option {
-        display: flex;
-        align-items: center;
-        margin-bottom: 0.7em;
-    }
-    
-    .radio-option input[type="radio"] {
-        margin-right: 0.5em;
-    }
-    
-    .file-preview {
-        width: 100%;
-        height: 200px;
-        border: 1px dashed #d1d5db;
-        border-radius: 6px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 0.5em;
-        background-size: contain;
-        background-repeat: no-repeat;
-        background-position: center;
-    }
-    
-    .file-preview-text {
-        color: #6b7280;
-        font-size: 0.9em;
-    }
-    
-    .form-actions {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 2em;
-    }
-    
-    .btn-secondary {
-        display: inline-block;
-        padding: 0.6em 1.2em;
-        background: #f3f4f6;
-        color: #374151;
-        border: none;
-        border-radius: 6px;
-        font-size: 0.9em;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background 0.15s;
-        text-decoration: none;
-    }
+    .container { max-width: 800px; margin: 0 auto; padding: 2em 1em; }
+    .form-container { background: white; border-radius: 14px; box-shadow: 0 4px 24px rgba(37,99,235,0.08), 0 1.5px 6px rgba(0,0,0,0.04); margin: 2em 0; padding: 2.5em 2em; transition: box-shadow 0.2s; }
+    .form-container:hover { box-shadow: 0 8px 32px rgba(37,99,235,0.13), 0 2px 8px rgba(0,0,0,0.06); }
+    .form-section { margin-bottom: 2.5em; border-bottom: 1px solid #e5e7eb; padding-bottom: 2em; }
+    .form-section:last-child { border-bottom: none; }
+    .form-section-title { font-size: 1.25em; font-weight: 700; margin-bottom: 1.2em; color: #1746a2; letter-spacing: 0.01em; }
+    .form-row { display: flex; gap: 1.5em; margin-bottom: 1.2em; }
+    .form-group { flex: 1; margin-bottom: 1.2em; }
+    .form-label { display: block; font-weight: 600; margin-bottom: 0.5em; color: #374151; letter-spacing: 0.01em; }
+    .form-control, .form-select, input[type="text"], input[type="number"], textarea { width: 100%; padding: 0.8em; font-size: 1.05em; border: 1.5px solid #d1d5db; border-radius: 8px; background: #fff; transition: border 0.2s, box-shadow 0.2s; }
+    .form-control:focus, .form-select:focus, input[type="text"]:focus, input[type="number"]:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.13); }
+    .form-select { appearance: none; -webkit-appearance: none; background: #fff url('data:image/svg+xml;utf8,<svg fill="gray" height="16" viewBox="0 0 24 24" width="16" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 0.7em center/1.2em 1.2em; }
+    .radio-group { display: flex; gap: 2em; margin-bottom: 1.2em; }
+    .radio-option { display: flex; align-items: center; gap: 0.5em; font-size: 1.05em; }
+    .radio-option input[type="radio"] { accent-color: #2563eb; width: 1.1em; height: 1.1em; }
+    textarea { min-height: 80px; resize: vertical; }
+    .file-preview { margin-top: 0.7em; min-height: 40px; background: #f3f4f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6b7280; font-size: 0.98em; border: 1.5px dashed #d1d5db; padding: 0.7em; transition: border 0.2s; }
+    .file-preview img { max-width: 180px; max-height: 120px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    .file-preview-text { color: #9ca3af; font-size: 1em; }
+    .form-actions { display: flex; gap: 1em; justify-content: flex-end; margin-top: 2em; }
+    .btn-primary { display: inline-block; padding: 0.7em 1.5em; background: linear-gradient(90deg,#2563eb 60%,#1746a2 100%); color: #fff; border: none; border-radius: 7px; font-size: 1.08em; font-weight: 600; cursor: pointer; transition: background 0.15s, box-shadow 0.15s; text-decoration: none; box-shadow: 0 1px 3px rgba(37,99,235,0.07); }
+    .btn-primary:hover { background: linear-gradient(90deg,#1746a2 60%,#2563eb 100%); }
+    .btn-secondary { display: inline-block; padding: 0.7em 1.5em; background: #f3f4f6; color: #374151; border: none; border-radius: 7px; font-size: 1.08em; font-weight: 600; cursor: pointer; transition: background 0.15s; text-decoration: none; }
     .btn-secondary:hover { background: #e5e7eb; }
-    
-    .error-message {
-        color: #b91c1c;
-        font-size: 0.9em;
-        margin-top: 0.5em;
-    }
-    
-    .conditional-section {
-        margin-top: 1em;
-        padding: 1em;
-        background: #f9fafb;
-        border-radius: 6px;
-        border-left: 3px solid #2563eb;
-    }
-    
-    footer { background: #111; color: #fff; text-align: center; padding: 1.2em 0 1em 0; font-size: 1em; position: fixed; left: 0; right: 0; bottom: 0; z-index: 100; letter-spacing: 0.02em; }
-    
-    @media (max-width: 768px) {
-        .form-row {
-            flex-direction: column;
-            gap: 1em;
-        }
-        
-        .navbar-links {
-            display: none;
-        }
-    }
+    .error-message { color: #dc2626; font-size: 1em; margin-bottom: 1em; text-align: center; }
+    .success-message { color: #059669; font-size: 1em; margin-bottom: 1em; text-align: center; }
+    @media (max-width: 700px) { .container, .form-container { padding: 1em 0.5em; } .form-row { flex-direction: column; gap: 1em; } .form-section { padding-bottom: 1em; } }
     </style>
 </head>
 <body>
+    {% if user_role and user_role != 'guest' %}
+    <span class="user-role-badge-fixed">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px;"><circle cx="12" cy="12" r="10"/><text x="12" y="16" text-anchor="middle" font-size="10" fill="#2563eb">{{ user_role|capitalize }}</text></svg>
+        <span>{{ user_role|capitalize }}</span>
+    </span>
+    {% endif %}
     <nav class="navbar">
         <div class="navbar-content">
             <a href="/" class="navbar-brand">Каталог<br>Асан</a>
             <div class="navbar-links">
-                <a href="/asanas" class="nav-link">Асаны</a>
+                <a href="/asanas" class="nav-link">Каталог асан</a>
                 <a href="/sources" class="nav-link">Источники</a>
+                {% if is_admin %}
+                <a href="/settings" class="nav-link">Настройки</a>
+                {% endif %}
                 <a href="/about" class="nav-link">О проекте</a>
                 <a href="/expert-instructions" class="nav-link">Инструкции</a>
-                <a href="/settings" class="nav-link">Настройки</a>
             </div>
             <div class="navbar-actions" id="navbar-actions">
-                <!-- Динамически заполняется JavaScript -->
+                {% if user_role %}
+                <!-- user-role-badge убран отсюда -->
+                {% endif %}
             </div>
         </div>
     </nav>
@@ -234,6 +74,7 @@
         
         <div class="form-container">
             <form id="add-asana-form" enctype="multipart/form-data">
+                <div id="form-message"></div>
                 <div class="form-section">
                     <h2 class="form-section-title">Название асаны</h2>
                     
@@ -267,23 +108,19 @@
                                 <input type="text" id="new_name_ru" name="new_name_ru" class="form-control">
                             </div>
                             <div class="form-group">
-                                <label for="new_name_en" class="form-label">Название на английском:</label>
-                                <input type="text" id="new_name_en" name="new_name_en" class="form-control">
+                                <label for="new_name_sanskrit" class="form-label">Название на санскрите:</label>
+                                <input type="text" id="new_name_sanskrit" name="new_name_sanskrit" class="form-control">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="new_name_sanskrit" class="form-label">Название на санскрите:</label>
-                                <input type="text" id="new_name_sanskrit" name="new_name_sanskrit" class="form-control">
-                            </div>
-                            <div class="form-group">
                                 <label for="transliteration" class="form-label">Транслитерация:</label>
                                 <input type="text" id="transliteration" name="transliteration" class="form-control">
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="translation" class="form-label">Перевод:</label>
-                            <input type="text" id="translation" name="translation" class="form-control">
+                            <div class="form-group">
+                                <label for="definition" class="form-label">Пояснение названия:</label>
+                                <input type="text" id="definition" name="definition" class="form-control">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -373,6 +210,9 @@
     </footer>
     
     <script>
+    // Добавляем базовый URL
+    const BASE_URL = '';  // Теперь используем относительные пути
+
     // Добавление динамических элементов в навбар в зависимости от роли пользователя
     function updateNavbar() {
         const navbarActions = document.getElementById('navbar-actions');
@@ -384,6 +224,7 @@
             if (userRole === 'admin' || userRole === 'expert') {
                 navbarActions.innerHTML = `
                     <a href="/asana/add" class="btn-primary">Добавить асану</a>
+                    <a href="/sources/add" class="btn-primary" style="margin-left: 10px;">Добавить источник</a>
                     <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
                 `;
             } else {
@@ -432,94 +273,153 @@
     function handlePhotoPreview() {
         const photoInput = document.getElementById('photo');
         const photoPreview = document.getElementById('photo-preview');
-        
         photoInput.addEventListener('change', function() {
             if (this.files && this.files[0]) {
                 const reader = new FileReader();
-                
                 reader.onload = function(e) {
-                    photoPreview.style.backgroundImage = `url('${e.target.result}')`;
-                    photoPreview.innerHTML = '';
+                    photoPreview.innerHTML = `<img src='${e.target.result}' alt='Фото асаны' />`;
                 };
-                
                 reader.readAsDataURL(this.files[0]);
             } else {
-                photoPreview.style.backgroundImage = '';
                 photoPreview.innerHTML = '<span class="file-preview-text">Предпросмотр фото появится здесь</span>';
             }
         });
     }
     
-    // Обработка отправки формы
-    function handleFormSubmit() {
-        const form = document.getElementById('add-asana-form');
+    // Функция для обработки отправки формы
+    async function handleFormSubmit(e) {
+        e.preventDefault();
+        const formMessage = document.getElementById('form-message');
+        formMessage.innerHTML = '';
+        const form = e.target;
+        const formData = new FormData(form);
+        const token = localStorage.getItem('token');
         
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const token = localStorage.getItem('token');
-            
-            // Определение выбранного названия
-            const nameOption = document.querySelector('input[name="name-option"]:checked').value;
-            if (nameOption === 'existing') {
-                formData.set('selected_name', document.getElementById('selected_name').value);
-                // Удаляем поля нового названия
-                formData.delete('new_name_ru');
-                formData.delete('new_name_en');
-                formData.delete('new_name_sanskrit');
-                formData.delete('transliteration');
-                formData.delete('translation');
+        console.log('=== DEBUG INFO ===');
+        console.log('Token:', token);
+        console.log('Form data:');
+        for (let [key, value] of formData.entries()) {
+            if (key === 'photo') {
+                console.log('photo:', value.name, value.type, value.size);
             } else {
-                formData.set('selected_name', 'new');
+                console.log(key + ':', value);
             }
+        }
+
+        if (!token) {
+            formMessage.innerHTML = '<div class="error-message">Требуется авторизация</div>';
+            return;
+        }
+
+        // Проверка обязательных полей
+        const nameOption = document.querySelector('input[name="name-option"]:checked').value;
+        if (nameOption === 'existing' && !document.getElementById('selected_name').value) {
+            formMessage.innerHTML = '<div class="error-message">Выберите название асаны</div>';
+            return;
+        }
+        if (nameOption === 'new' && !document.getElementById('new_name_ru').value.trim()) {
+            formMessage.innerHTML = '<div class="error-message">Заполните название на русском</div>';
+            return;
+        }
+
+        const sourceOption = document.querySelector('input[name="source-option"]:checked').value;
+        if (sourceOption === 'existing' && !document.getElementById('selected_source').value) {
+            formMessage.innerHTML = '<div class="error-message">Выберите источник</div>';
+            return;
+        }
+        if (sourceOption === 'new') {
+            if (!document.getElementById('new_source_title').value.trim() || 
+                !document.getElementById('new_source_author').value.trim() || 
+                !document.getElementById('new_source_year').value.trim()) {
+                formMessage.innerHTML = '<div class="error-message">Заполните обязательные поля нового источника: название, автор, год</div>';
+                return;
+            }
+        }
+
+        const photoInput = document.getElementById('photo');
+        if (!photoInput.files || !photoInput.files[0]) {
+            formMessage.innerHTML = '<div class="error-message">Загрузите фото асаны</div>';
+            return;
+        }
+
+        // Определение выбранного названия
+        if (nameOption === 'existing') {
+            formData.set('selected_name', document.getElementById('selected_name').value);
+            // Удаляем поля нового названия
+            formData.delete('new_name_ru');
+            formData.delete('new_name_sanskrit');
+            formData.delete('transliteration');
+            formData.delete('definition');
+        } else {
+            formData.set('selected_name', 'new');
+        }
+
+        // Определение выбранного источника
+        if (sourceOption === 'existing') {
+            formData.set('selected_source', document.getElementById('selected_source').value);
+            // Удаляем поля нового источника
+            formData.delete('new_source_title');
+            formData.delete('new_source_author');
+            formData.delete('new_source_year');
+            formData.delete('new_source_publisher');
+            formData.delete('new_source_pages');
+            formData.delete('new_source_annotation');
+        } else {
+            formData.set('selected_source', 'new');
+        }
+
+        // Отключаем кнопку отправки
+        const submitButton = form.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Добавление...';
+
+        try {
+            console.log('Sending request to /api/asana...');
+            const response = await fetch('/api/asana', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
             
-            // Определение выбранного источника
-            const sourceOption = document.querySelector('input[name="source-option"]:checked').value;
-            if (sourceOption === 'existing') {
-                formData.set('selected_source', document.getElementById('selected_source').value);
-                // Удаляем поля нового источника
-                formData.delete('new_source_title');
-                formData.delete('new_source_author');
-                formData.delete('new_source_year');
-                formData.delete('new_source_publisher');
-                formData.delete('new_source_pages');
-                formData.delete('new_source_annotation');
+            const responseData = await response.json().catch(e => {
+                console.log('Failed to parse JSON:', e);
+                return null;
+            });
+            console.log('Response data:', responseData);
+
+            if (response.ok) {
+                formMessage.innerHTML = '<div class="success-message">Асана успешно добавлена!</div>';
+                setTimeout(() => { window.location.href = '/asanas-page'; }, 1200);
             } else {
-                formData.set('selected_source', 'new');
-            }
-            
-            // Удаляем служебные поля
-            formData.delete('name-option');
-            formData.delete('source-option');
-            
-            try {
-                const response = await fetch('/asana', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: formData
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    alert('Асана успешно добавлена!');
-                    window.location.href = '/asanas';
-                } else {
-                    const errorData = await response.json();
-                    alert(errorData.detail || 'Ошибка при добавлении асаны');
+                let msg = 'Ошибка при добавлении асаны';
+                if (response.status === 401 || response.status === 403) {
+                    msg = 'Требуется авторизация или недостаточно прав';
+                } else if (responseData && responseData.detail) {
+                    msg = responseData.detail;
                 }
-            } catch (error) {
-                console.error('Error adding asana:', error);
-                alert('Ошибка при добавлении асаны');
+                formMessage.innerHTML = `<div class="error-message">${msg}</div>`;
             }
-        });
+        } catch (error) {
+            console.error('Error:', error);
+            formMessage.innerHTML = '<div class="error-message">Ошибка при добавлении асаны</div>';
+        } finally {
+            // Включаем кнопку обратно
+            submitButton.disabled = false;
+            submitButton.textContent = 'Добавить асану';
+        }
     }
     
     // Инициализация при загрузке страницы
     document.addEventListener('DOMContentLoaded', function() {
         updateNavbar();
+        
+        // Добавляем обработчик отправки формы ОДИН РАЗ
+        document.getElementById('add-asana-form').addEventListener('submit', handleFormSubmit);
         
         // Инициализация обработчиков событий для радио-кнопок
         document.querySelectorAll('input[name="name-option"]').forEach(function(radio) {
@@ -532,18 +432,21 @@
         
         // Инициализация предпросмотра фото
         handlePhotoPreview();
-        
-        // Инициализация обработчика отправки формы
-        handleFormSubmit();
     });
 
+    // Проверка существующего имени
     document.getElementById('new_name_ru')?.addEventListener('blur', async function() {
         const nameRu = this.value.trim();
         if (!nameRu) return;
-        const resp = await fetch(`/asanas/search?query=${encodeURIComponent(nameRu)}`);
-        const data = await resp.json();
-        if (data.length > 0) {
-            alert('Асана с таким названием уже существует!');
+        try {
+            const resp = await fetch(`/api/asanas/search?query=${encodeURIComponent(nameRu)}&fuzzy=false`);
+            if (!resp.ok) throw new Error('Network response was not ok');
+            const data = await resp.json();
+            if (data.length > 0) {
+                alert('Асана с таким названием уже существует!');
+            }
+        } catch (error) {
+            console.error('Error checking name:', error);
         }
     });
     </script>

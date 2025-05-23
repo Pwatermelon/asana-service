@@ -3,168 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/static/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <title>О проекте</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
     <style>
-    .navbar { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.03); padding: 0.7em 0; position: sticky; top: 0; z-index: 1000; }
-    .navbar-content { display: flex; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 2em; }
-    .navbar-brand { font-size: 1.6em; font-weight: 700; margin-right: 2em; color: #111; text-decoration: none; line-height: 1; }
-    .navbar-links { display: flex; gap: 1.5em; flex: 1; justify-content: center; }
-    .nav-link { color: #222; text-decoration: none; font-size: 1.08em; padding: 0.2em 0.5em; border-radius: 4px; transition: background 0.15s; }
-    .nav-link.active, .nav-link:hover { color: #2563eb; background: #f2f6ff; }
-    
-    .about-container { padding: 2em 0; max-width: 800px; margin: 0 auto; }
-    .about-title { font-size: 1.8em; margin-bottom: 1em; }
-    .about-content { 
-        background: white; 
-        padding: 2em; 
-        border-radius: 8px; 
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        line-height: 1.6;
-    }
-    
-    .btn-edit {
-        display: inline-block;
-        margin-top: 1em;
-        padding: 0.5em 1em;
-        background: #f3f4f6;
-        color: #374151;
-        border: none;
-        border-radius: 4px;
-        font-size: 0.9em;
-        cursor: pointer;
-        transition: background 0.15s;
-        text-decoration: none;
-    }
-    .btn-edit:hover { background: #e5e7eb; }
-    
-    .edit-form {
-        margin-top: 1.5em;
-        display: none;
-    }
-    
-    .edit-textarea {
-        width: 100%;
-        min-height: 300px;
-        padding: 1em;
-        border: 1px solid #d1d5db;
-        border-radius: 5px;
-        font-family: 'Inter', sans-serif;
-        margin-bottom: 1em;
-    }
-    
-    .btn-save {
-        padding: 0.5em 1em;
-        background: #2563eb;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-    
-    .btn-cancel {
-        padding: 0.5em 1em;
-        background: #f3f4f6;
-        color: #374151;
-        border: none;
-        border-radius: 4px;
-        margin-left: 0.5em;
-        cursor: pointer;
-    }
-
+    body { font-family: 'Inter', sans-serif; line-height: 1.5; margin: 0; padding: 0; background: #f9fafb; color: #222; margin-bottom: 60px; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 1em 2em; }
+    .card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; padding: 2em; margin-bottom: 2em; }
+    .card:hover { transform: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .page-header { margin: 2em 0 1.5em 0; }
+    .page-title { font-size: 1.8em; margin-bottom: 0.5em; color: #111; }
+    .page-description { font-size: 1.05em; color: #4b5563; margin-bottom: 1.5em; }
+    .admin-only { margin-top: 2em; padding: 1em; background: #f9fafb; border-radius: 6px; border-left: 3px solid #2563eb; }
+    .admin-only-label { color: #2563eb; font-weight: 500; font-size: 0.9em; margin-bottom: 0.5em; }
+    .edit-form { margin-top: 1.5em; display: none; }
+    .edit-textarea { width: 100%; min-height: 200px; padding: 1em; border: 1px solid #e5e7eb; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 1em; line-height: 1.6; margin-bottom: 1.5em; resize: vertical; }
+    .edit-textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
+    .edit-actions { display: flex; gap: 1em; }
+    .btn-primary { display: inline-block; padding: 0.6em 1.2em; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 0.9em; font-weight: 500; cursor: pointer; transition: background 0.15s; text-decoration: none; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { display: inline-block; padding: 0.6em 1.2em; background: #f3f4f6; color: #374151; border: none; border-radius: 6px; font-size: 0.9em; font-weight: 500; cursor: pointer; transition: background 0.15s; text-decoration: none; }
+    .btn-secondary:hover { background: #e5e7eb; }
+    .btn-logout { display: inline-block; padding: 0.6em 1.2em; background: #f3f4f6; color: #374151; border: none; border-radius: 6px; font-size: 0.9em; font-weight: 500; cursor: pointer; transition: background 0.15s; text-decoration: none; margin-left: 1em; }
+    .btn-logout:hover { background: #e5e7eb; }
     footer { background: #111; color: #fff; text-align: center; padding: 1.2em 0 1em 0; font-size: 1em; position: fixed; left: 0; right: 0; bottom: 0; z-index: 100; letter-spacing: 0.02em; }
+    @media (max-width: 768px) {
+        .container { padding: 1em 0.5em; }
+        .card { padding: 1em; }
+        .page-title { font-size: 1.3em; }
+    }
     </style>
 </head>
 <body>
+    {% if user_role and user_role != 'guest' %}
+    <span class="user-role-badge-fixed">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px;"><circle cx="12" cy="12" r="10"/><text x="12" y="16" text-anchor="middle" font-size="10" fill="#2563eb">{{ user_role|capitalize }}</text></svg>
+        <span>{{ user_role|capitalize }}</span>
+    </span>
+    {% endif %}
     <nav class="navbar">
         <div class="navbar-content">
             <a href="/" class="navbar-brand">Каталог<br>Асан</a>
             <div class="navbar-links">
-                <a href="/asanas" class="nav-link">Асаны</a>
+                <a href="/asanas" class="nav-link">Каталог асан</a>
                 <a href="/sources" class="nav-link">Источники</a>
-                <a href="/about" class="nav-link active">О проекте</a>
+                {% if is_admin %}
                 <a href="/settings" class="nav-link">Настройки</a>
-                {% if is_expert_or_admin %}
-                    <a href="/expert-instructions" class="nav-link">Инструкции</a>
                 {% endif %}
+                <a href="/about" class="nav-link active">О проекте</a>
+                <a href="/expert-instructions" class="nav-link">Инструкции</a>
             </div>
             <div class="navbar-actions" id="navbar-actions">
-                <!-- Динамически заполняется JavaScript -->
+                {% if is_expert_or_admin %}
+                    <a href="/asana/add" class="btn-primary">Добавить асану</a>
+                    <a href="/sources/add" class="btn-primary" style="margin-left: 10px;">Добавить источник</a>
+                {% endif %}
+                {% if is_authenticated %}
+                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                {% else %}
+                    <a href="/login" class="btn-primary">Войти</a>
+                {% endif %}
             </div>
         </div>
     </nav>
-    
+
     <div class="container">
-        <div class="about-container">
-            <h1 class="about-title">О проекте</h1>
-            
-            <div class="about-content">
-                <div id="about-text">{{ content | safe }}</div>
-                
-                {% if user_role == 'admin' %}
-                    <div id="admin-controls">
-                        <button id="btn-edit" class="btn-edit">Редактировать</button>
-                        <div id="edit-form" class="edit-form">
-                            <textarea id="edit-content" class="edit-textarea">{{ content }}</textarea>
-                            <div>
-                                <button id="btn-save" class="btn-save">Сохранить</button>
-                                <button id="btn-cancel" class="btn-cancel">Отмена</button>
-                            </div>
-                        </div>
+        <div class="page-header">
+            <h1 class="page-title">О проекте</h1>
+            <p class="page-description">Каталог асан — открытый проект для йога-сообщества. Здесь собраны описания, фотографии и источники классических и современных асан.</p>
+        </div>
+        <div class="card">
+            <h2>Описание проекта</h2>
+            <div id="about-text">{{ content | safe }}</div>
+            {% if is_admin %}
+            <div class="admin-only">
+                <div class="admin-only-label">Только для администраторов</div>
+                <button id="btn-edit" class="btn-primary">Редактировать</button>
+                <div id="edit-form" class="edit-form">
+                    <textarea id="edit-content" class="edit-textarea">{{ content }}</textarea>
+                    <div class="edit-actions" style="margin-top:1em;">
+                        <button id="btn-save" class="btn-primary">Сохранить</button>
+                        <button id="btn-cancel" class="btn-secondary">Отмена</button>
                     </div>
-                {% endif %}
+                </div>
             </div>
+            {% endif %}
         </div>
     </div>
-    
+
     <footer>
         © {{ year }} Каталог асан
     </footer>
-    
-    <script>
-    // Функция для проверки авторизации
-    async function checkAuth() {
-        try {
-            const response = await fetch('/api/auth/check');
-            const data = await response.json();
-            return {
-                isAuthenticated: data.is_authenticated,
-                userRole: data.role
-            };
-        } catch (error) {
-            console.error('Error checking auth:', error);
-            return {
-                isAuthenticated: false,
-                userRole: null
-            };
-        }
-    }
 
-    // При загрузке страницы
-    document.addEventListener('DOMContentLoaded', async function() {
-        // Проверяем авторизацию
-        const { isAuthenticated, userRole } = await checkAuth();
-        window.isExpertOrAdmin = userRole === 'admin' || userRole === 'expert';
-        
-        // Обновляем навбар
-        const navbarActions = document.getElementById('navbar-actions');
-        if (isAuthenticated) {
-            if (window.isExpertOrAdmin) {
-                navbarActions.innerHTML = `
-                    <a href="/asana/add" class="btn-primary">Добавить асану</a>
-                    <a href="/sources/add" class="btn-primary" style="margin-left: 10px;">Добавить источник</a>
-                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
-                `;
-            } else {
-                navbarActions.innerHTML = `
-                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
-                `;
-            }
-        } else {
-            navbarActions.innerHTML = `
-                <a href="/login" class="btn-primary">Войти</a>
-            `;
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnEdit = document.getElementById('btn-edit');
+        const editForm = document.getElementById('edit-form');
+        const btnSave = document.getElementById('btn-save');
+        const btnCancel = document.getElementById('btn-cancel');
+        const editContent = document.getElementById('edit-content');
+        const aboutText = document.getElementById('about-text');
+
+        if (btnEdit) {
+            btnEdit.addEventListener('click', function() {
+                editForm.style.display = 'block';
+                btnEdit.style.display = 'none';
+            });
+        }
+
+        if (btnCancel) {
+            btnCancel.addEventListener('click', function() {
+                editForm.style.display = 'none';
+                btnEdit.style.display = 'inline-block';
+            });
+        }
+
+        if (btnSave) {
+            btnSave.addEventListener('click', async function() {
+                try {
+                    const response = await fetch('/api/about', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            content: editContent.value
+                        })
+                    });
+
+                    if (response.ok) {
+                        aboutText.innerHTML = editContent.value;
+                        editForm.style.display = 'none';
+                        btnEdit.style.display = 'inline-block';
+                    } else {
+                        alert('Ошибка при сохранении изменений');
+                    }
+                } catch (error) {
+                    console.error('Error saving content:', error);
+                    alert('Ошибка при сохранении изменений');
+                }
+            });
         }
     });
     </script>

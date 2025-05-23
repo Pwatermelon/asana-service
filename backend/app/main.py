@@ -27,6 +27,7 @@ from passlib.context import CryptContext
 from app import config
 from fastapi.templating import Jinja2Templates
 from jose import jwt, JWTError
+from datetime import datetime
 
 # Create module logger
 logger = logging.getLogger("asana_service.api")
@@ -34,10 +35,9 @@ logger = logging.getLogger("asana_service.api")
 # Определение моделей для данных, используемых в API
 class AsanaNameCreate(BaseModel):
     name_ru: str
-    name_en: Optional[str] = None
     name_sanskrit: Optional[str] = None
     transliteration: Optional[str] = None
-    translation: Optional[str] = None
+    definition: Optional[str] = None
 
 class SourceCreate(BaseModel):
     title: str
@@ -195,7 +195,7 @@ async def logout():
     return response
 
 # Маршруты для асан
-@app.get("/asanas")
+@app.get("/asanas", tags=["asana"])
 async def get_asanas():
     """Получить все асаны (доступно всем)"""
     logger.info("Getting asanas list for all users")
@@ -203,21 +203,21 @@ async def get_asanas():
     logger.info(f"Retrieved {len(asanas)} asanas")
     return asanas
 
-@app.get("/asanas/by-letter/{letter}")
+@app.get("/asanas/by-letter/{letter}", tags=["asana"])
 async def get_asanas_by_letter(letter: str):
     """Получить асаны, начинающиеся с определенной буквы (доступно всем)"""
     logger.info(f"Getting asanas starting with letter: {letter}")
     asanas = get_asanas_by_first_letter(letter)
     return asanas
 
-@app.get("/asanas/by-source/{source_id}")
+@app.get("/asanas/by-source/{source_id}", tags=["asana"])
 async def get_source_asanas(source_id: str):
     """Получить асаны из определенного источника (доступно всем)"""
     logger.info(f"Getting asanas from source: {source_id}")
     asanas = get_asanas_by_source(source_id)
     return asanas
 
-@app.get("/asanas/search")
+@app.get("/asanas/search", tags=["asana"])
 async def search_asanas(query: str, fuzzy: bool = True):
     """Поиск асан по названию (доступно всем)"""
     logger.info(f"Searching asanas with query: {query}, fuzzy: {fuzzy}")
@@ -231,14 +231,38 @@ async def search_asanas(query: str, fuzzy: bool = True):
     logger.info(f"Found {len(asanas)} asanas matching query: {query}")
     return asanas
 
-@app.post("/asana")
+@app.get("/asana/add", tags=["asana"])
+def add_asana_page(request: Request):
+    """Страница добавления асаны (только для expert/admin)"""
+    user_role = get_user_role_from_request(request)
+    if user_role not in ['admin', 'expert']:
+        return RedirectResponse(url="/login")
+    
+    # Загружаем существующие названия и источники для выбора
+    names = load_asana_names()
+    sources = load_sources()
+    
+    return templates.TemplateResponse(
+        "add_asana.html",
+        {
+            "request": request,
+            "names": names,
+            "sources": sources,
+            "user_role": user_role,
+            "is_admin": user_role == 'admin',
+            "is_authenticated": True,
+            "is_expert_or_admin": True,
+            "year": datetime.now().year
+        }
+    )
+
+@app.post("/asana", tags=["asana"])
 async def post_asana(
     selected_name: str = Form(...),
     new_name_ru: Optional[str] = Form(None),
-    new_name_en: Optional[str] = Form(None),
     new_name_sanskrit: Optional[str] = Form(None),
     transliteration: Optional[str] = Form(None),
-    translation: Optional[str] = Form(None),
+    definition: Optional[str] = Form(None),
     selected_source: str = Form(...),
     new_source_title: Optional[str] = Form(None),
     new_source_author: Optional[str] = Form(None),
@@ -253,7 +277,7 @@ async def post_asana(
     try:
         logger.info(f"Adding new asana by user: {user}")
         logger.debug(f"Form data received - selected_name: {selected_name}, selected_source: {selected_source}")
-        logger.debug(f"New name data: ru={new_name_ru}, en={new_name_en}, sanskrit={new_name_sanskrit}")
+        logger.debug(f"New name data: ru={new_name_ru}, sanskrit={new_name_sanskrit}")
         logger.debug(f"New source data: title={new_source_title}, author={new_source_author}, year={new_source_year}")
         logger.debug(f"Photo filename: {photo.filename}")
         
@@ -267,17 +291,12 @@ async def post_asana(
             name_data = {
                 "name_ru": new_name_ru
             }
-            
-            # Добавляем необязательные поля, если они есть
-            if new_name_en:
-                name_data["name_en"] = new_name_en
             if new_name_sanskrit:
                 name_data["name_sanskrit"] = new_name_sanskrit
             if transliteration:
                 name_data["transliteration"] = transliteration
-            if translation:
-                name_data["translation"] = translation
-                
+            if definition:
+                name_data["definition"] = definition
             name_id = add_asana_name(name_data)
             logger.debug(f"Created new name with ID: {name_id}")
         else:
@@ -323,9 +342,8 @@ async def post_asana(
         logger.info(f"Successfully created asana with ID: {asana_id}")
         
         return {"message": "Asana added successfully", "id": asana_id}
-
     except Exception as e:
-        logger.error(f"Error adding asana: {str(e)}", exc_info=True)
+        logger.error(f"Error adding asana: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.delete("/asanas")
@@ -560,6 +578,12 @@ def asanas_page(request: Request, search_query: str = '', current_letter: str = 
     for asana in asanas:
         first_letter = asana["name"]["ru"][0].upper() if asana["name"]["ru"] else "?"
         grouped_asanas.setdefault(first_letter, []).append(asana)
+    
+    # Получаем роль пользователя
+    user_role = get_user_role_from_request(request)
+    is_authenticated = user_role != 'guest'
+    is_expert_or_admin = user_role in ['admin', 'expert']
+    
     return templates.TemplateResponse(
         "asana_list.html",
         {
@@ -567,11 +591,14 @@ def asanas_page(request: Request, search_query: str = '', current_letter: str = 
             "grouped_asanas": grouped_asanas,
             "search_query": search_query,
             "current_letter": current_letter,
-            "user_role": get_user_role_from_request(request)
+            "user_role": user_role,
+            "is_authenticated": is_authenticated,
+            "is_expert_or_admin": is_expert_or_admin,
+            "is_admin": user_role == 'admin'
         }
     )
 
-@app.get("/asana/{asana_id}-page")
+@app.get("/asana/{asana_id}-page", tags=["asana"])
 def asana_detail_page(request: Request, asana_id: str = Path(...)):
     asana = get_asana_by_id(asana_id)
     sources = load_sources()
@@ -592,7 +619,17 @@ def sources_page(request: Request):
 
 @app.get("/settings-page")
 def settings_page(request: Request):
-    return templates.TemplateResponse("settings.html", {"request": request, "user_role": get_user_role_from_request(request)})
+    user_role = get_user_role_from_request(request)
+    return templates.TemplateResponse(
+        "settings.html",
+        {
+            "request": request,
+            "user_role": user_role,
+            "is_admin": user_role == 'admin',
+            "is_authenticated": user_role != 'guest',
+            "is_expert_or_admin": user_role in ['admin', 'expert'],
+        }
+    )
 
 @app.get("/about-page")
 def about_page(request: Request):
@@ -600,7 +637,23 @@ def about_page(request: Request):
     about = db.query(AboutProject).first()
     db.close()
     content = about.content if about else "Информация о проекте отсутствует"
-    return templates.TemplateResponse("about_project.html", {"request": request, "content": content, "user_role": get_user_role_from_request(request)})
+    
+    # Получаем роль пользователя
+    user_role = get_user_role_from_request(request)
+    is_authenticated = user_role != 'guest'
+    is_expert_or_admin = user_role in ['admin', 'expert']
+    
+    return templates.TemplateResponse(
+        "about_project.html", 
+        {
+            "request": request, 
+            "content": content, 
+            "user_role": user_role,
+            "is_authenticated": is_authenticated,
+            "is_expert_or_admin": is_expert_or_admin,
+            "is_admin": user_role == 'admin'
+        }
+    )
 
 @app.get("/expert-instructions-page")
 def expert_instructions_page(request: Request):
@@ -609,3 +662,124 @@ def expert_instructions_page(request: Request):
     db.close()
     content = instructions.content if instructions else "Инструкции для экспертов отсутствуют"
     return templates.TemplateResponse("expert_instructions.html", {"request": request, "content": content, "user_role": get_user_role_from_request(request)})
+
+@app.get("/sources/add")
+def add_source_page(request: Request):
+    """Страница добавления источника (только для expert/admin)"""
+    user_role = get_user_role_from_request(request)
+    if user_role not in ['admin', 'expert']:
+        return RedirectResponse(url="/login")
+    
+    return templates.TemplateResponse(
+        "add_source.html",
+        {
+            "request": request,
+            "user_role": user_role,
+            "is_admin": user_role == 'admin',
+            "is_authenticated": True,
+            "is_expert_or_admin": True,
+            "year": datetime.now().year
+        }
+    )
+
+# API routes
+@app.get("/api/asanas/search")
+async def api_search_asanas(query: str, fuzzy: bool = True):
+    """API: Поиск асан по названию"""
+    logger.info(f"API: Searching asanas with query: {query}, fuzzy: {fuzzy}")
+    if fuzzy:
+        asanas = search_asanas_by_name(query)
+    else:
+        all_asanas = load_asanas()
+        asanas = [a for a in all_asanas if query.lower() in a["name"]["ru"].lower()]
+    return asanas
+
+@app.post("/api/asana")
+async def api_post_asana(
+    selected_name: str = Form(...),
+    new_name_ru: Optional[str] = Form(None),
+    new_name_sanskrit: Optional[str] = Form(None),
+    transliteration: Optional[str] = Form(None),
+    definition: Optional[str] = Form(None),
+    selected_source: str = Form(...),
+    new_source_title: Optional[str] = Form(None),
+    new_source_author: Optional[str] = Form(None),
+    new_source_year: Optional[int] = Form(None),
+    new_source_publisher: Optional[str] = Form(None),
+    new_source_pages: Optional[int] = Form(None),
+    new_source_annotation: Optional[str] = Form(None),
+    photo: UploadFile = File(...),
+    user: str = Depends(is_expert_or_admin)
+):
+    """API: Добавить новую асану"""
+    try:
+        logger.info(f"API: Adding new asana by user: {user}")
+        logger.debug(f"Form data received - selected_name: {selected_name}, selected_source: {selected_source}")
+        logger.debug(f"New name data: ru={new_name_ru}, sanskrit={new_name_sanskrit}")
+        logger.debug(f"New source data: title={new_source_title}, author={new_source_author}, year={new_source_year}")
+        logger.debug(f"Photo filename: {photo.filename}")
+        
+        # Обработка названия
+        name_id = None
+        if selected_name != "new":
+            logger.debug(f"Using existing name ID: {selected_name}")
+            name_id = selected_name
+        elif new_name_ru:
+            logger.info("Creating new asana name")
+            name_data = {
+                "name_ru": new_name_ru
+            }
+            if new_name_sanskrit:
+                name_data["name_sanskrit"] = new_name_sanskrit
+            if transliteration:
+                name_data["transliteration"] = transliteration
+            if definition:
+                name_data["definition"] = definition
+            name_id = add_asana_name(name_data)
+            logger.debug(f"Created new name with ID: {name_id}")
+        else:
+            logger.error("Missing required name fields for new name")
+            raise HTTPException(status_code=400, detail="При добавлении нового названия поле названия на русском обязательно")
+
+        # Обработка источника
+        source_id = None
+        if selected_source != "new":
+            logger.debug(f"Using existing source ID: {selected_source}")
+            source_id = selected_source
+        elif all([new_source_title, new_source_author, new_source_year]):
+            logger.info("Creating new source")
+            source_data = {
+                "title": new_source_title,
+                "author": new_source_author,
+                "year": int(new_source_year)
+            }
+            
+            # Добавляем необязательные поля, если они есть
+            if new_source_publisher:
+                source_data["publisher"] = new_source_publisher
+            if new_source_pages:
+                source_data["pages"] = int(new_source_pages)
+            if new_source_annotation:
+                source_data["annotation"] = new_source_annotation
+                
+            source_id = add_source(source_data)
+            logger.debug(f"Created new source with ID: {source_id}")
+        else:
+            logger.error("Missing required source fields for new source")
+            raise HTTPException(status_code=400, detail="При добавлении нового источника поля автора, названия и года обязательны")
+
+        # Обработка фото
+        logger.info("Processing photo upload")
+        photo_content = await photo.read()
+        photo_base64 = base64.b64encode(photo_content).decode()
+        logger.debug(f"Photo size in bytes: {len(photo_content)}")
+
+        # Добавляем асану
+        logger.info("Adding asana to ontology")
+        asana_id = add_asana(name_id=name_id, source_id=source_id, photo_base64=photo_base64)
+        logger.info(f"Successfully created asana with ID: {asana_id}")
+        
+        return {"message": "Asana added successfully", "id": asana_id}
+    except Exception as e:
+        logger.error(f"Error adding asana: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))

@@ -113,7 +113,12 @@ async def root(request: Request):
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    user_role = await get_user_role(request)
+    token = await get_current_token(request)
+    is_admin = user_role == "admin"
+    is_expert_or_admin = user_role in ["admin", "expert"]
+    is_authenticated = token is not None
+    return templates.TemplateResponse("login.html", {"request": request, "user_role": user_role, "is_admin": is_admin, "is_expert_or_admin": is_expert_or_admin, "is_authenticated": is_authenticated})
 
 @app.post("/login", response_class=JSONResponse)
 async def login(request: Request):
@@ -149,7 +154,12 @@ async def login(request: Request):
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request})
+    user_role = await get_user_role(request)
+    token = await get_current_token(request)
+    is_admin = user_role == "admin"
+    is_expert_or_admin = user_role in ["admin", "expert"]
+    is_authenticated = token is not None
+    return templates.TemplateResponse("register.html", {"request": request, "user_role": user_role, "is_admin": is_admin, "is_expert_or_admin": is_expert_or_admin, "is_authenticated": is_authenticated})
 
 @app.post("/register", response_class=JSONResponse)
 async def register(request: Request):
@@ -269,27 +279,26 @@ async def asanas_list(request: Request):
     try:
         token = await get_token_for_api(request)
         user_role = await get_user_role(request)
+        is_admin = user_role == "admin"
+        is_expert_or_admin = user_role in ["admin", "expert"]
+        is_authenticated = token is not None
         asanas = await api_client.get_asanas(token)
-        
-        # Группируем асаны по первой букве названия
         grouped_asanas = {}
         for asana in asanas:
             first_letter = asana['name']['ru'][0].upper() if asana['name']['ru'] else "?"
             if first_letter not in grouped_asanas:
                 grouped_asanas[first_letter] = []
             grouped_asanas[first_letter].append(asana)
-        
-        # Сортируем группы по алфавиту
         sorted_groups = sorted(grouped_asanas.items())
-        
-        # Получаем уникальные первые буквы для навигации
         alphabet = sorted(grouped_asanas.keys())
-        
         return templates.TemplateResponse("asana_list.html", {
             "request": request, 
             "grouped_asanas": sorted_groups,
             "alphabet": alphabet,
-            "is_expert_or_admin": user_role in ["admin", "expert"],
+            "is_admin": is_admin,
+            "is_expert_or_admin": is_expert_or_admin,
+            "is_authenticated": is_authenticated,
+            "user_role": user_role,
             "year": datetime.datetime.now().year
         })
     except Exception as e:
@@ -303,17 +312,22 @@ async def asanas_list(request: Request):
 async def asanas_by_letter(request: Request, letter: str):
     try:
         token = await get_token_for_api(request)
+        user_role = await get_user_role(request)
+        is_admin = user_role == "admin"
+        is_expert_or_admin = user_role in ["admin", "expert"]
+        is_authenticated = token is not None
         asanas = await api_client.get_asanas_by_letter(letter, token)
-        
-        # Получаем все буквы алфавита для навигации
         all_asanas = await api_client.get_asanas(token)
         alphabet = sorted(set(asana['name']['ru'][0].upper() for asana in all_asanas if asana['name']['ru']))
-        
         return templates.TemplateResponse("asana_list.html", {
             "request": request, 
             "asanas": asanas,
             "alphabet": alphabet,
             "current_letter": letter,
+            "is_admin": is_admin,
+            "is_expert_or_admin": is_expert_or_admin,
+            "is_authenticated": is_authenticated,
+            "user_role": user_role,
             "year": datetime.datetime.now().year
         })
     except Exception as e:
@@ -346,19 +360,23 @@ async def asanas_by_source(request: Request, source_id: str):
             "error": "Failed to load asanas for source"
         })
 
-
-
 @app.get("/sources", response_class=HTMLResponse)
 async def sources_list(request: Request):
     try:
-        sources = await api_client.get_sources()
-        
-        # Сортируем источники по автору
+        token = await get_token_for_api(request)
+        user_role = await get_user_role(request)
+        is_admin = user_role == "admin"
+        is_expert_or_admin = user_role in ["admin", "expert"]
+        is_authenticated = token is not None
+        sources = await api_client.get_sources(token)
         sources.sort(key=lambda s: s.get('author', '').lower())
-        
         return templates.TemplateResponse("sources.html", {
-            "request": request, 
+            "request": request,
             "sources": sources,
+            "is_admin": is_admin,
+            "is_expert_or_admin": is_expert_or_admin,
+            "is_authenticated": is_authenticated,
+            "user_role": user_role,
             "year": datetime.datetime.now().year
         })
     except Exception as e:
@@ -388,13 +406,17 @@ async def about_page(request: Request):
     try:
         about_data = await api_client.get_about_project()
         content = about_data.get('content', 'Информация о проекте отсутствует')
-        
         user_role = await get_user_role(request)
-        
+        is_admin = user_role == "admin"
+        is_expert_or_admin = user_role in ["admin", "expert"]
+        is_authenticated = await get_current_token(request) is not None
         return templates.TemplateResponse("about_project.html", {
             "request": request,
             "content": content,
-            "is_admin": user_role == "admin",
+            "is_admin": is_admin,
+            "is_expert_or_admin": is_expert_or_admin,
+            "is_authenticated": is_authenticated,
+            "user_role": user_role,
             "year": datetime.datetime.now().year
         })
     except Exception as e:
@@ -439,15 +461,17 @@ async def expert_instructions_page(request: Request):
     try:
         instructions_data = await api_client.get_expert_instructions()
         content = instructions_data.get('content', 'Инструкции для экспертов отсутствуют')
-        
         user_role = await get_user_role(request)
-        is_expert_or_admin = user_role in ["expert", "admin"]
-        
+        is_admin = user_role == "admin"
+        is_expert_or_admin = user_role in ["admin", "expert"]
+        is_authenticated = await get_current_token(request) is not None
         return templates.TemplateResponse("expert_instructions.html", {
             "request": request,
             "content": content,
-            "is_admin": user_role == "admin",
+            "is_admin": is_admin,
             "is_expert_or_admin": is_expert_or_admin,
+            "is_authenticated": is_authenticated,
+            "user_role": user_role,
             "year": datetime.datetime.now().year
         })
     except Exception as e:
@@ -489,15 +513,19 @@ async def update_expert_instructions(request: Request):
 
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
-    token = await get_current_token(request)
     user_role = await get_user_role(request)
-    
+    token = await get_current_token(request)
+    is_admin = user_role == "admin"
+    is_expert_or_admin = user_role in ["admin", "expert"]
+    is_authenticated = token is not None
     context = {
         "request": request,
-        "is_admin": user_role == "admin",
+        "is_admin": is_admin,
+        "is_expert_or_admin": is_expert_or_admin,
+        "is_authenticated": is_authenticated,
+        "user_role": user_role,
         "year": datetime.datetime.now().year
     }
-    
     return templates.TemplateResponse("settings.html", context)
 
 @app.post("/upload-ontology", response_class=JSONResponse)
@@ -526,19 +554,24 @@ async def upload_ontology(request: Request, ontology_file: UploadFile = File(...
 async def add_asana_form(request: Request):
     token = await get_current_token(request)
     user_role = await get_user_role(request)
-    
+    is_admin = user_role == "admin"
+    is_expert_or_admin = user_role in ["admin", "expert"]
+    is_authenticated = token is not None
     if not token or user_role not in ["admin", "expert"]:
         return RedirectResponse("/login")
-        
     try:
         names = await api_client.get_names()
         sources = await api_client.get_sources()
         return templates.TemplateResponse(
             "add_asana.html",
             {
-                "request": request, 
-                "names": names, 
+                "request": request,
+                "names": names,
                 "sources": sources,
+                "is_admin": is_admin,
+                "is_expert_or_admin": is_expert_or_admin,
+                "is_authenticated": is_authenticated,
+                "user_role": user_role,
                 "year": datetime.datetime.now().year
             }
         )
@@ -552,27 +585,28 @@ async def add_asana_form(request: Request):
 @app.get("/asana/{asana_id}", response_class=HTMLResponse)
 async def asana_detail(request: Request, asana_id: str):
     try:
-        # Получаем все асаны и находим нужную по ID
         asanas = await api_client.get_asanas()
         asana = next((a for a in asanas if a.get('id') == asana_id), None)
-        
         if not asana:
             return templates.TemplateResponse("error.html", {
                 "request": request,
                 "error": "Асана не найдена"
             })
-        
-        # Получаем все источники для формы добавления фото
         user_role = await get_user_role(request)
+        is_admin = user_role == "admin"
+        is_expert_or_admin = user_role in ["admin", "expert"]
+        is_authenticated = await get_current_token(request) is not None
         sources = []
         if user_role in ["admin", "expert"]:
             sources = await api_client.get_sources()
-        
         return templates.TemplateResponse("asana_detail.html", {
             "request": request,
             "asana": asana,
             "sources": sources,
-            "is_expert_or_admin": user_role in ["admin", "expert"],
+            "is_expert_or_admin": is_expert_or_admin,
+            "is_admin": is_admin,
+            "is_authenticated": is_authenticated,
+            "user_role": user_role,
             "year": datetime.datetime.now().year
         })
     except Exception as e:
@@ -618,16 +652,19 @@ async def add_asana_photo(request: Request, asana_id: str):
 async def add_source_form(request: Request):
     token = await get_token_for_api(request)
     user_role = await get_user_role(request)
-    
+    is_admin = user_role == "admin"
+    is_expert_or_admin = user_role in ["admin", "expert"]
+    is_authenticated = token is not None
     if not token or user_role not in ["admin", "expert"]:
         return RedirectResponse("/login")
-        
     return templates.TemplateResponse(
         "add_source.html",
         {
             "request": request,
-            "is_expert_or_admin": True,
-            "is_authenticated": True,
+            "is_expert_or_admin": is_expert_or_admin,
+            "is_authenticated": is_authenticated,
+            "is_admin": is_admin,
+            "user_role": user_role,
             "year": datetime.datetime.now().year
         }
     )
@@ -651,33 +688,28 @@ async def source_asanas(request: Request, source_id: str):
     try:
         token = await get_token_for_api(request)
         user_role = await get_user_role(request)
-        
-        # Получаем информацию об источнике
+        is_admin = user_role == "admin"
+        is_expert_or_admin = user_role in ["admin", "expert"]
+        is_authenticated = token is not None
         source = await api_client.get_source(source_id, token)
-        
-        # Получаем все асаны из этого источника
         asanas = await api_client.get_asanas_by_source(source_id, token)
-        
-        # Группируем асаны по первой букве названия
         grouped_asanas = {}
         for asana in asanas:
             first_letter = asana['name']['ru'][0].upper() if asana['name']['ru'] else "?"
             if first_letter not in grouped_asanas:
                 grouped_asanas[first_letter] = []
             grouped_asanas[first_letter].append(asana)
-        
-        # Сортируем группы по алфавиту
         sorted_groups = dict(sorted(grouped_asanas.items()))
-        
-        # Получаем уникальные первые буквы для навигации
         alphabet = sorted(grouped_asanas.keys())
-        
         return templates.TemplateResponse("source_asanas.html", {
             "request": request,
             "source": source,
             "grouped_asanas": sorted_groups,
             "alphabet": alphabet,
-            "is_expert_or_admin": user_role in ["admin", "expert"],
+            "is_expert_or_admin": is_expert_or_admin,
+            "is_admin": is_admin,
+            "is_authenticated": is_authenticated,
+            "user_role": user_role,
             "year": datetime.datetime.now().year
         })
     except Exception as e:

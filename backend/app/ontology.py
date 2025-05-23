@@ -61,11 +61,10 @@ def load_asanas():
         logger.debug(f"Name object: {name_obj}")
         logger.debug(f"Photo objects: {photo_objs}")
         name_data = {
-            "ru": str(g.value(name_obj, ASANA.nameInRussian)) if name_obj else "",
-            "en": str(g.value(name_obj, ASANA.nameInEnglish)) if name_obj else "",
-            "sanskrit": str(g.value(name_obj, ASANA.nameInSanskrit)) if name_obj else "",
-            "transliteration": str(g.value(name_obj, ASANA.nameTransliteration)) if name_obj and g.value(name_obj, ASANA.nameTransliteration) else "",
-            "translation": str(g.value(name_obj, ASANA.nameTranslation)) if name_obj and g.value(name_obj, ASANA.nameTranslation) else ""
+            "name_ru": str(g.value(name_obj, ASANA.nameInRussian)) if name_obj else "",
+            "name_sanskrit": str(g.value(name_obj, ASANA.nameInSanskrit)) if name_obj and g.value(name_obj, ASANA.nameInSanskrit) else "",
+            "transliteration": str(g.value(name_obj, ASANA.nameInTranslit)) if name_obj and g.value(name_obj, ASANA.nameInTranslit) else "",
+            "definition": str(g.value(name_obj, ASANA.OWLDataProperty_c8100b71_09ff_49ec_8fbf_63fa1be3947a)) if name_obj and g.value(name_obj, ASANA.OWLDataProperty_c8100b71_09ff_49ec_8fbf_63fa1be3947a) else ""
         }
         source_obj = None
         if photo_objs:
@@ -195,10 +194,9 @@ def load_asana_names():
         name_data = {
             "id": str(name),
             "name_ru": str(g.value(name, ASANA.nameInRussian)),
-            "name_en": str(g.value(name, ASANA.nameInEnglish)) if g.value(name, ASANA.nameInEnglish) else "",
             "name_sanskrit": str(g.value(name, ASANA.nameInSanskrit)) if g.value(name, ASANA.nameInSanskrit) else "",
-            "transliteration": str(g.value(name, ASANA.nameTransliteration)) if g.value(name, ASANA.nameTransliteration) else "",
-            "translation": str(g.value(name, ASANA.nameTranslation)) if g.value(name, ASANA.nameTranslation) else ""
+            "transliteration": str(g.value(name, ASANA.nameInTranslit)) if g.value(name, ASANA.nameInTranslit) else "",
+            "definition": str(g.value(name, ASANA.OWLDataProperty_c8100b71_09ff_49ec_8fbf_63fa1be3947a)) if g.value(name, ASANA.OWLDataProperty_c8100b71_09ff_49ec_8fbf_63fa1be3947a) else ""
         }
         logger.debug(f"Loaded asana name: {name_data}")
         names.append(name_data)
@@ -216,27 +214,16 @@ def add_asana_name(name_data: Dict[str, str]) -> str:
         
         g.add((name_uri, RDF.type, ASANA.AsanaName))
         g.add((name_uri, ASANA.nameInRussian, Literal(name_data["name_ru"])))
-        
-        # Добавляем необязательные поля, если они есть
-        if "name_en" in name_data and name_data["name_en"]:
-            g.add((name_uri, ASANA.nameInEnglish, Literal(name_data["name_en"])))
-        
         if "name_sanskrit" in name_data and name_data["name_sanskrit"]:
             g.add((name_uri, ASANA.nameInSanskrit, Literal(name_data["name_sanskrit"])))
-        
-        # Добавляем новые поля
         if "transliteration" in name_data and name_data["transliteration"]:
-            g.add((name_uri, ASANA.nameTransliteration, Literal(name_data["transliteration"])))
-        
-        if "translation" in name_data and name_data["translation"]:
-            g.add((name_uri, ASANA.nameTranslation, Literal(name_data["translation"])))
-            
+            g.add((name_uri, ASANA.nameInTranslit, Literal(name_data["transliteration"])))
+        if "definition" in name_data and name_data["definition"]:
+            g.add((name_uri, ASANA.OWLDataProperty_c8100b71_09ff_49ec_8fbf_63fa1be3947a, Literal(name_data["definition"])))
         logger.debug("Added name triples")
-        
         logger.info(f"Saving graph to {config.OWL_FILE_PATH}")
         g.serialize(destination=config.OWL_FILE_PATH, format="xml")
         logger.info("Successfully saved graph")
-        
         return str(name_uri)
     except Exception as e:
         logger.error(f"Error adding asana name: {str(e)}", exc_info=True)
@@ -374,11 +361,10 @@ def get_asanas_by_source(source_id: str):
         source_photo_objs = [photo for photo in photo_objs if g.value(photo, ASANA.hasSource) == source_uri]
         
         name_data = {
-            "ru": str(g.value(name_obj, ASANA.nameInRussian)) if name_obj else "",
-            "en": str(g.value(name_obj, ASANA.nameInEnglish)) if name_obj and g.value(name_obj, ASANA.nameInEnglish) else "",
-            "sanskrit": str(g.value(name_obj, ASANA.nameInSanskrit)) if name_obj and g.value(name_obj, ASANA.nameInSanskrit) else "",
-            "transliteration": str(g.value(name_obj, ASANA.nameTransliteration)) if name_obj and g.value(name_obj, ASANA.nameTransliteration) else "",
-            "translation": str(g.value(name_obj, ASANA.nameTranslation)) if name_obj and g.value(name_obj, ASANA.nameTranslation) else ""
+            "name_ru": str(g.value(name_obj, ASANA.nameInRussian)) if name_obj else "",
+            "name_sanskrit": str(g.value(name_obj, ASANA.nameInSanskrit)) if name_obj and g.value(name_obj, ASANA.nameInSanskrit) else "",
+            "transliteration": str(g.value(name_obj, ASANA.nameInTranslit)) if name_obj and g.value(name_obj, ASANA.nameInTranslit) else "",
+            "definition": str(g.value(name_obj, ASANA.OWLDataProperty_c8100b71_09ff_49ec_8fbf_63fa1be3947a)) if name_obj and g.value(name_obj, ASANA.OWLDataProperty_c8100b71_09ff_49ec_8fbf_63fa1be3947a) else ""
         }
         
         photos_base64 = [str(g.value(photo, ASANA.base64Photo)) for photo in source_photo_objs if g.value(photo, ASANA.base64Photo)]

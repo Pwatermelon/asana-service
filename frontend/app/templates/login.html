@@ -3,50 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/static/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <title>Вход</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
     <style>
-    body { font-family: 'Inter', sans-serif; line-height: 1.5; margin: 0; padding: 0; background: #f9fafb; color: #222; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 2em; }
+    body { font-family: 'Inter', sans-serif; line-height: 1.5; margin: 0; padding: 0; background: #f9fafb; color: #222; margin-bottom: 60px; }
+    .container { max-width: 400px; margin: 0 auto; padding: 2em 1em; }
     .auth-container { background: white; max-width: 400px; margin: 2em auto; padding: 2em; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .auth-title { text-align: center; font-size: 1.8em; margin-bottom: 1em; color: #111; }
     .form-group { margin-bottom: 1.2em; }
-    label { display: block; margin-bottom: 0.5em; font-weight: 500; color: #374151; }
-    input[type="text"], input[type="password"] { 
-        width: 100%; 
-        padding: 0.7em; 
-        font-size: 1em; 
-        border: 1px solid #d1d5db; 
-        border-radius: 5px; 
-        background: #fff;
-    }
-    input[type="text"]:focus, input[type="password"]:focus { 
-        outline: none; 
-        border-color: #2563eb; 
-        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); 
-    }
-    .btn-primary { 
-        display: block;
-        width: 100%;
-        background: #2563eb; 
-        color: #fff; 
-        border: none; 
-        border-radius: 6px; 
-        padding: 0.8em; 
-        font-size: 1em; 
-        font-weight: 500; 
-        cursor: pointer; 
-        transition: background 0.15s; 
-    }
+    label { display: block; font-weight: 500; margin-bottom: 0.5em; color: #374151; }
+    .form-control, input[type="text"], input[type="password"] { width: 100%; padding: 0.7em; font-size: 1em; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; }
+    .form-control:focus, input[type="text"]:focus, input[type="password"]:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
+    .btn-primary { display: inline-block; padding: 0.6em 1.2em; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 1em; font-weight: 500; cursor: pointer; transition: background 0.15s; text-decoration: none; }
     .btn-primary:hover { background: #1d4ed8; }
-    .error-message { color: #dc2626; font-size: 0.9em; margin-top: 0.5em; }
-    .auth-links { display: flex; justify-content: space-between; margin-top: 1em; }
-    .auth-links a { color: #2563eb; text-decoration: none; font-size: 0.9em; }
+    .auth-links { text-align: center; margin-top: 1.5em; display: flex; flex-direction: column; gap: 0.5em; }
+    .auth-links a { color: #2563eb; text-decoration: none; font-weight: 500; }
     .auth-links a:hover { text-decoration: underline; }
-    .remember-me { display: flex; align-items: center; margin-bottom: 1em; }
-    .remember-me input { margin-right: 0.5em; width: auto; }
-    .remember-me label { margin-bottom: 0; }
+    .error-message { color: #dc2626; font-size: 0.98em; margin-bottom: 1em; text-align: center; }
+    .remember-me { display: flex; align-items: center; gap: 0.5em; margin-bottom: 1em; }
+    footer { background: #111; color: #fff; text-align: center; padding: 1.2em 0 1em 0; font-size: 1em; position: fixed; left: 0; right: 0; bottom: 0; z-index: 100; letter-spacing: 0.02em; }
+    @media (max-width: 600px) { .container, .auth-container { padding: 1em 0.5em; } .auth-title { font-size: 1.2em; } }
     </style>
 </head>
 <body>
@@ -54,32 +31,30 @@
         <div class="auth-container">
             <h1 class="auth-title">Вход в систему</h1>
             <div id="error-message" class="error-message" style="display: none;"></div>
-            
             <form id="login-form">
                 <div class="form-group">
                     <label for="username">Логин</label>
                     <input type="text" id="username" name="username" required>
                 </div>
-                
                 <div class="form-group">
                     <label for="password">Пароль</label>
                     <input type="password" id="password" name="password" required>
                 </div>
-                
                 <div class="remember-me">
                     <input type="checkbox" id="remember-me" name="remember-me">
                     <label for="remember-me">Запомнить меня</label>
                 </div>
-                
                 <button type="submit" class="btn-primary">Войти</button>
             </form>
-            
             <div class="auth-links">
                 <a href="/reset-password">Забыли пароль?</a>
                 <a href="/register">Регистрация</a>
             </div>
         </div>
     </div>
+    <footer>
+        © {{ year }} Каталог асан
+    </footer>
     
     <script>
     document.getElementById('login-form').addEventListener('submit', async function(e) {
@@ -105,6 +80,9 @@
             const data = await response.json();
             
             if (response.ok) {
+                // Сохраняем роль в localStorage
+                localStorage.setItem('user_role', data.role);
+                localStorage.setItem('token', data.token);
                 // Перенаправляем на главную страницу
                 window.location.href = '/';
             } else {

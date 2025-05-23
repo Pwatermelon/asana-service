@@ -52,13 +52,7 @@
     .page-title { font-size: 1.8em; margin-bottom: 0.5em; color: #111; }
     .page-description { font-size: 1.05em; color: #4b5563; margin-bottom: 1.5em; }
     
-    .settings-container {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        margin: 2em 0;
-        padding: 2em;
-    }
+    .settings-container { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin: 2em 0; padding: 2em; }
     
     .settings-section {
         margin-bottom: 2em;
@@ -188,21 +182,53 @@
             display: none;
         }
     }
+    
+    .user-role-badge {
+        display: inline-flex;
+        align-items: center;
+        background: #f2f6ff;
+        color: #2563eb;
+        border-radius: 6px;
+        font-size: 1em;
+        font-weight: 500;
+        padding: 0.3em 0.8em;
+        margin-left: 1em;
+        box-shadow: 0 1px 3px rgba(37,99,235,0.07);
+    }
     </style>
 </head>
 <body>
+    {% if user_role and user_role != 'guest' %}
+    <span class="user-role-badge-fixed">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px;"><circle cx="12" cy="12" r="10"/><text x="12" y="16" text-anchor="middle" font-size="10" fill="#2563eb">{{ user_role|capitalize }}</text></svg>
+        <span>{{ user_role|capitalize }}</span>
+    </span>
+    {% endif %}
+    <script>
+    window.isAdmin = {{ 'true' if is_admin else 'false' }};
+    </script>
     <nav class="navbar">
         <div class="navbar-content">
             <a href="/" class="navbar-brand">Каталог<br>Асан</a>
             <div class="navbar-links">
-                <a href="/asanas" class="nav-link">Асаны</a>
+                <a href="/asanas" class="nav-link">Каталог асан</a>
                 <a href="/sources" class="nav-link">Источники</a>
+                {% if is_admin %}
+                <a href="/settings" class="nav-link active">Настройки</a>
+                {% endif %}
                 <a href="/about" class="nav-link">О проекте</a>
                 <a href="/expert-instructions" class="nav-link">Инструкции</a>
-                <a href="/settings" class="nav-link active">Настройки</a>
             </div>
             <div class="navbar-actions" id="navbar-actions">
-                <!-- Динамически заполняется JavaScript -->
+                {% if is_expert_or_admin %}
+                    <a href="/asana/add" class="btn-primary">Добавить асану</a>
+                    <a href="/sources/add" class="btn-primary" style="margin-left: 10px;">Добавить источник</a>
+                {% endif %}
+                {% if is_authenticated %}
+                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                {% else %}
+                    <a href="/login" class="btn-primary">Войти</a>
+                {% endif %}
             </div>
         </div>
     </nav>
@@ -224,6 +250,9 @@
                     </a>
                 </div>
                 
+                {% if is_admin is not defined %}
+                <div class="error-message">[Ошибка: переменная is_admin не передана в шаблон]</div>
+                {% endif %}
                 {% if is_admin %}
                 <div class="admin-only">
                     <div class="admin-only-label">Только для администраторов</div>
@@ -261,104 +290,56 @@
     </footer>
     
     <script>
-    // Добавление динамических элементов в навбар в зависимости от роли пользователя
-    function updateNavbar() {
-        const navbarActions = document.getElementById('navbar-actions');
-        const token = localStorage.getItem('token');
-        const userRole = localStorage.getItem('user_role');
-        
-        if (token) {
-            // Для экспертов и админов показываем дополнительные кнопки
-            if (userRole === 'admin' || userRole === 'expert') {
-                navbarActions.innerHTML = `
-                    <a href="/asana/add" class="btn-primary">Добавить асану</a>
-                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
-                `;
-            } else {
-                navbarActions.innerHTML = `
-                    <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
-                `;
-            }
-        } else {
-            navbarActions.innerHTML = `
-                <a href="/login" class="btn-primary">Войти</a>
-            `;
-        }
-    }
-    
-    // Обработка выбора файла
-    const fileInput = document.getElementById('ontology-file');
-    const selectedFileText = document.getElementById('selected-file');
-    
-    if (fileInput) {
-        fileInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                selectedFileText.textContent = this.files[0].name;
-            } else {
-                selectedFileText.textContent = 'Файл не выбран';
-            }
-        });
-    }
-    
-    // Обработка отправки формы загрузки онтологии
-    const uploadForm = document.getElementById('upload-ontology-form');
-    const uploadMessage = document.getElementById('upload-message');
-    
-    if (uploadForm) {
-        uploadForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            if (!fileInput.files || !fileInput.files[0]) {
-                showMessage('Пожалуйста, выберите файл для загрузки', 'error');
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('ontology_file', fileInput.files[0]);
-            
-            const token = localStorage.getItem('token');
-            
-            try {
-                const response = await fetch('/upload-ontology', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: formData
-                });
-                
-                if (response.ok) {
-                    showMessage('Файл онтологии успешно загружен', 'success');
-                    fileInput.value = '';
-                    selectedFileText.textContent = 'Файл не выбран';
-                } else {
-                    const data = await response.json();
-                    showMessage(data.detail || 'Ошибка при загрузке файла', 'error');
-                }
-            } catch (error) {
-                console.error('Error uploading ontology:', error);
-                showMessage('Ошибка при загрузке файла', 'error');
-            }
-        });
-    }
-    
-    // Функция для отображения сообщений
-    function showMessage(text, type) {
-        if (uploadMessage) {
-            uploadMessage.textContent = text;
-            uploadMessage.className = 'message ' + type;
-            uploadMessage.style.display = 'block';
-            
-            // Автоматически скрыть сообщение через 5 секунд
-            setTimeout(() => {
-                uploadMessage.style.display = 'none';
-            }, 5000);
-        }
-    }
-    
     // При загрузке страницы
     document.addEventListener('DOMContentLoaded', function() {
-        updateNavbar();
+        // Показываем/скрываем элементы управления для админа
+        const adminControls = document.querySelectorAll('.admin-only');
+        adminControls.forEach(control => {
+            control.style.display = window.isAdmin ? 'block' : 'none';
+        });
+
+        // Обработчик для формы загрузки онтологии
+        const uploadForm = document.getElementById('upload-ontology-form');
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData();
+                const fileInput = document.getElementById('ontology-file');
+                formData.append('file', fileInput.files[0]);
+                
+                try {
+                    const response = await fetch('/api/ontology/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        alert('Онтология успешно загружена');
+                        fileInput.value = '';
+                    } else {
+                        const data = await response.json();
+                        alert(data.detail || 'Ошибка при загрузке онтологии');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Ошибка при загрузке файла');
+                }
+            });
+
+            // Обработчик для отображения имени выбранного файла
+            const fileInput = document.getElementById('ontology-file');
+            const fileLabel = document.querySelector('.file-input-label');
+            const originalLabelText = fileLabel.innerHTML;
+
+            fileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    fileLabel.innerHTML = `<i class="fas fa-upload"></i> ${this.files[0].name}`;
+                } else {
+                    fileLabel.innerHTML = originalLabelText;
+                }
+            });
+        }
     });
     </script>
 </body>

@@ -210,8 +210,7 @@ async def search_asanas(query: str, fuzzy: bool = True, token: Optional[str] = N
         logger.error(f"Error searching asanas: {str(e)}")
         raise
 
-async def add_asana(selected_name, selected_source, new_name_ru, new_name_en, 
-                new_name_sanskrit, transliteration=None, translation=None,
+async def add_asana(selected_name, selected_source, new_name_ru, new_name_sanskrit=None, transliteration=None, definition=None,
                 new_source_title=None, new_source_author=None, new_source_year=None, 
                 new_source_publisher=None, new_source_pages=None, new_source_annotation=None,
                 photo=None, token=None):
@@ -222,24 +221,19 @@ async def add_asana(selected_name, selected_source, new_name_ru, new_name_en,
         "Authorization": f"Bearer {token}"
     }
     
-    # Prepare form data using httpx's Files and data
     files = {}
     data = {
         "selected_name": selected_name,
         "selected_source": selected_source
     }
-    
     if new_name_ru:
         data["new_name_ru"] = new_name_ru
-    if new_name_en:
-        data["new_name_en"] = new_name_en
     if new_name_sanskrit:
         data["new_name_sanskrit"] = new_name_sanskrit
     if transliteration:
         data["transliteration"] = transliteration
-    if translation:
-        data["translation"] = translation
-        
+    if definition:
+        data["definition"] = definition
     if new_source_title:
         data["new_source_title"] = new_source_title
     if new_source_author:
@@ -252,10 +246,8 @@ async def add_asana(selected_name, selected_source, new_name_ru, new_name_en,
         data["new_source_pages"] = str(new_source_pages)
     if new_source_annotation:
         data["new_source_annotation"] = new_source_annotation
-    
     if photo:
         files["photo"] = ("photo.jpg", photo, "image/jpeg")
-
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -266,12 +258,10 @@ async def add_asana(selected_name, selected_source, new_name_ru, new_name_en,
             )
             if response.status_code == 401:
                 raise ValueError("Authentication token is invalid or expired")
-            
             response_data = response.json()
             if not response.is_success:
                 error_msg = response_data.get("detail", "Unknown error occurred")
                 raise ValueError(f"API request failed: {error_msg}")
-            
             return {"success": True, "data": response_data}
     except httpx.RequestError as e:
         raise ValueError(f"Failed to communicate with API: {str(e)}")

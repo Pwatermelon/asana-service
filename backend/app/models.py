@@ -55,10 +55,9 @@ class PasswordResetConfirm(BaseModel):
 
 class AsanaName(BaseModel):
     name_ru: str
-    name_en: Optional[str] = None
     name_sanskrit: Optional[str] = None
     transliteration: Optional[str] = None
-    translation: Optional[str] = None
+    definition: Optional[str] = None
 
 class AsanaSource(BaseModel):
     author: str

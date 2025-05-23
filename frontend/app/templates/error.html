@@ -4,18 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ошибка - Asana Service</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
-        <div class="error-box">
+        <div class="card error-box" style="max-width: 500px; margin: 4em auto; text-align: center;">
             <h1>Произошла ошибка</h1>
             <p class="error-message">{{ error }}</p>
-            <div class="buttons">
-                <a href="/" class="button">Вернуться на главную</a>
-                <a href="javascript:history.back()" class="button secondary">Назад</a>
+            <div class="form-actions" style="justify-content: center; gap: 1em;">
+                <a href="/" class="btn-primary">Вернуться на главную</a>
+                <a href="javascript:history.back()" class="btn-secondary">Назад</a>
             </div>
         </div>
     </div>
+    <footer>
+        © {{ year }} Каталог асан
+    </footer>
 </body>
 </html>
