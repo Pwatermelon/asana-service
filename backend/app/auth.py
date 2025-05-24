@@ -56,8 +56,11 @@ def create_access_token(data: dict, remember_me: bool = False):
         expire_minutes = config.ACCESS_TOKEN_EXPIRE_MINUTES
         
     expire = datetime.utcnow() + timedelta(minutes=expire_minutes)
-    to_encode.update({"exp": expire})
-    logger.debug(f"Creating token for {data.get('sub')} expiring at {expire}")
+    to_encode.update({
+        "exp": expire,
+        "role": data.get("role", "guest")  # Добавляем роль в токен
+    })
+    logger.debug(f"Creating token for {data.get('sub')} with role {data.get('role')} expiring at {expire}")
     encoded_jwt = jwt.encode(to_encode, config.SECRET_KEY, algorithm=config.ALGORITHM)
     return encoded_jwt
 
@@ -110,6 +113,9 @@ def is_admin(user: str = Depends(get_current_user)):
     
     if not db_user:
         raise HTTPException(status_code=401, detail="User not found")
+    
+    if not db_user.is_confirmed:
+        raise HTTPException(status_code=403, detail="Email not confirmed")
         
     if db_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Недостаточно прав доступа. Требуется роль администратора.")
@@ -123,6 +129,9 @@ def is_expert_or_admin(user: str = Depends(get_current_user)):
     
     if not db_user:
         raise HTTPException(status_code=401, detail="User not found")
+    
+    if not db_user.is_confirmed:
+        raise HTTPException(status_code=403, detail="Email not confirmed")
         
     if db_user.role not in [UserRole.ADMIN, UserRole.EXPERT]:
         raise HTTPException(status_code=403, detail="Недостаточно прав доступа. Требуется роль эксперта или администратора.")
@@ -136,7 +145,7 @@ def generate_confirmation_code(length=6):
 def send_confirmation_email(email: str, code: str):
     """Отправляет электронное письмо с кодом подтверждения"""
     try:
-        # Настройки SMTP (должны быть в конфиге)
+        # Настройки SMTP из конфига
         smtp_server = config.SMTP_SERVER
         smtp_port = config.SMTP_PORT
         smtp_user = config.SMTP_USER
@@ -144,18 +153,38 @@ def send_confirmation_email(email: str, code: str):
         
         # Создаем сообщение
         msg = MIMEMultipart()
-        msg['From'] = smtp_user
+        msg['From'] = f"{config.SMTP_FROM_NAME} <{config.SMTP_FROM}>"
         msg['To'] = email
         msg['Subject'] = "Подтверждение регистрации в каталоге асан"
         
         # Создаем текст сообщения
         body = f"""
         <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ text-align: center; margin-bottom: 30px; }}
+                .code {{ font-size: 24px; font-weight: bold; text-align: center; 
+                        padding: 15px; background: #f3f4f6; border-radius: 8px; 
+                        margin: 20px 0; letter-spacing: 3px; }}
+                .footer {{ text-align: center; margin-top: 30px; font-size: 14px; color: #666; }}
+            </style>
+        </head>
         <body>
-            <h2>Подтверждение регистрации</h2>
-            <p>Спасибо за регистрацию в каталоге асан!</p>
-            <p>Ваш код подтверждения: <strong>{code}</strong></p>
-            <p>Введите этот код на странице подтверждения для активации аккаунта.</p>
+            <div class="container">
+                <div class="header">
+                    <h2>Подтверждение регистрации</h2>
+                </div>
+                <p>Здравствуйте!</p>
+                <p>Спасибо за регистрацию в каталоге асан. Для активации вашего аккаунта, пожалуйста, введите следующий код на странице подтверждения:</p>
+                <div class="code">{code}</div>
+                <p>Если вы не регистрировались в нашем сервисе, просто проигнорируйте это письмо.</p>
+                <div class="footer">
+                    С уважением,<br>
+                    Команда Каталога Асан
+                </div>
+            </div>
         </body>
         </html>
         """
@@ -181,7 +210,7 @@ def send_confirmation_email(email: str, code: str):
 def send_password_reset_email(email: str, code: str):
     """Отправляет электронное письмо для сброса пароля"""
     try:
-        # Настройки SMTP (должны быть в конфиге)
+        # Настройки SMTP из конфига
         smtp_server = config.SMTP_SERVER
         smtp_port = config.SMTP_PORT
         smtp_user = config.SMTP_USER
@@ -189,19 +218,38 @@ def send_password_reset_email(email: str, code: str):
         
         # Создаем сообщение
         msg = MIMEMultipart()
-        msg['From'] = smtp_user
+        msg['From'] = f"{config.SMTP_FROM_NAME} <{config.SMTP_FROM}>"
         msg['To'] = email
         msg['Subject'] = "Сброс пароля в каталоге асан"
         
         # Создаем текст сообщения
         body = f"""
         <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ text-align: center; margin-bottom: 30px; }}
+                .code {{ font-size: 24px; font-weight: bold; text-align: center; 
+                        padding: 15px; background: #f3f4f6; border-radius: 8px; 
+                        margin: 20px 0; letter-spacing: 3px; }}
+                .footer {{ text-align: center; margin-top: 30px; font-size: 14px; color: #666; }}
+            </style>
+        </head>
         <body>
-            <h2>Сброс пароля</h2>
-            <p>Вы запросили сброс пароля в каталоге асан.</p>
-            <p>Ваш код для сброса пароля: <strong>{code}</strong></p>
-            <p>Введите этот код на странице сброса пароля.</p>
-            <p>Если вы не запрашивали сброс пароля, проигнорируйте это письмо.</p>
+            <div class="container">
+                <div class="header">
+                    <h2>Сброс пароля</h2>
+                </div>
+                <p>Здравствуйте!</p>
+                <p>Вы запросили сброс пароля в каталоге асан. Для установки нового пароля введите следующий код на странице сброса пароля:</p>
+                <div class="code">{code}</div>
+                <p>Если вы не запрашивали сброс пароля, просто проигнорируйте это письмо.</p>
+                <div class="footer">
+                    С уважением,<br>
+                    Команда Каталога Асан
+                </div>
+            </div>
         </body>
         </html>
         """
@@ -225,7 +273,7 @@ def send_password_reset_email(email: str, code: str):
         return False
 
 def register_user(username: str, email: str, first_name: str, last_name: str, password: str):
-    """Регистрирует нового пользователя с ролью EXPERT"""
+    """Регистрирует нового пользователя с ролью GUEST"""
     db = SessionLocal()
     
     # Проверяем, что пользователь с таким именем не существует
@@ -248,7 +296,7 @@ def register_user(username: str, email: str, first_name: str, last_name: str, pa
         first_name=first_name,
         last_name=last_name,
         password_hash=get_password_hash(password),
-        role=UserRole.EXPERT,
+        role=UserRole.GUEST,  # Новые пользователи всегда получают роль GUEST
         is_confirmed=False,
         confirmation_code=confirmation_code
     )

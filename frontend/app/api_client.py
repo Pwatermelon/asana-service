@@ -281,6 +281,23 @@ async def get_sources(token: Optional[str] = None):
         logger.error(f"Error fetching sources: {str(e)}")
         raise
 
+async def get_source(source_id: str, token: Optional[str] = None):
+    """Получение информации об отдельном источнике"""
+    logger.info(f"Fetching source info for ID: {source_id}")
+    try:
+        # Сначала получаем все источники
+        sources = await get_sources(token)
+        # Ищем нужный источник по ID
+        for source in sources:
+            if source['id'].split('#')[-1].replace('source_', '') == source_id:
+                logger.info(f"Successfully found source: {source_id}")
+                return source
+        logger.warning(f"Source not found: {source_id}")
+        return None
+    except Exception as e:
+        logger.error(f"Error fetching source: {str(e)}")
+        raise
+
 async def get_names(token: Optional[str] = None):
     logger.info("Fetching asana names list")
     try:
@@ -423,3 +440,23 @@ async def upload_ontology(ontology_file: bytes, token: str):
         )
         response.raise_for_status()
         return response.json()
+
+async def add_source(source_data: dict, token: str):
+    """Добавить новый источник"""
+    if not token:
+        raise ValueError("Token is required for authentication")
+
+    try:
+        response = await make_request(
+            "POST",
+            f"{BACKEND_URL}/sources",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}"
+            },
+            json=source_data
+        )
+        return response
+    except Exception as e:
+        logger.error(f"Error adding source: {str(e)}")
+        raise

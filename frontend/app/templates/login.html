@@ -80,9 +80,6 @@
             const data = await response.json();
             
             if (response.ok) {
-                // Сохраняем роль в localStorage
-                localStorage.setItem('user_role', data.role);
-                localStorage.setItem('token', data.token);
                 // Перенаправляем на главную страницу
                 window.location.href = '/';
             } else {

@@ -213,14 +213,49 @@
     // Добавляем базовый URL
     const BASE_URL = '';  // Теперь используем относительные пути
 
-    // Добавление динамических элементов в навбар в зависимости от роли пользователя
+    // Функция для получения токена из cookie
+    function getToken() {
+        const tokenCookie = document.cookie.split('; ').find(row => row.startsWith('session_token='));
+        if (tokenCookie) {
+            const token = tokenCookie.split('=')[1];
+            try {
+                // Декодируем JWT токен
+                const tokenData = JSON.parse(atob(token.split('.')[1]));
+                // Проверяем срок действия
+                if (tokenData.expires_at && tokenData.expires_at < Date.now() / 1000) {
+                    window.location.href = '/login';
+                    return null;
+                }
+                return token;
+            } catch (e) {
+                console.error('Error parsing token:', e);
+                return null;
+            }
+        }
+        return null;
+    }
+
+    // Функция для получения роли пользователя из cookie
+    function getUserRole() {
+        const tokenCookie = document.cookie.split('; ').find(row => row.startsWith('session_token='));
+        if (tokenCookie) {
+            try {
+                const tokenData = JSON.parse(atob(tokenCookie.split('=')[1].split('.')[1]));
+                return tokenData.role;
+            } catch (e) {
+                console.error('Error parsing token:', e);
+                return null;
+            }
+        }
+        return null;
+    }
+
+    // Обновляем функцию updateNavbar
     function updateNavbar() {
         const navbarActions = document.getElementById('navbar-actions');
-        const token = localStorage.getItem('token');
-        const userRole = localStorage.getItem('user_role');
+        const userRole = '{{ user_role }}';  // Получаем роль из шаблона
         
-        if (token) {
-            // Для экспертов и админов показываем дополнительные кнопки
+        if (userRole && userRole !== 'guest') {
             if (userRole === 'admin' || userRole === 'expert') {
                 navbarActions.innerHTML = `
                     <a href="/asana/add" class="btn-primary">Добавить асану</a>
@@ -286,30 +321,13 @@
         });
     }
     
-    // Функция для обработки отправки формы
+    // Обновляем функцию handleFormSubmit
     async function handleFormSubmit(e) {
         e.preventDefault();
         const formMessage = document.getElementById('form-message');
         formMessage.innerHTML = '';
         const form = e.target;
         const formData = new FormData(form);
-        const token = localStorage.getItem('token');
-        
-        console.log('=== DEBUG INFO ===');
-        console.log('Token:', token);
-        console.log('Form data:');
-        for (let [key, value] of formData.entries()) {
-            if (key === 'photo') {
-                console.log('photo:', value.name, value.type, value.size);
-            } else {
-                console.log(key + ':', value);
-            }
-        }
-
-        if (!token) {
-            formMessage.innerHTML = '<div class="error-message">Требуется авторизация</div>';
-            return;
-        }
 
         // Проверка обязательных полей
         const nameOption = document.querySelector('input[name="name-option"]:checked').value;
@@ -374,59 +392,56 @@
         submitButton.textContent = 'Добавление...';
 
         try {
-            console.log('Sending request to /api/asana...');
-            const response = await fetch('/api/asana', {
+            const response = await fetch('/asana', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${getToken()}`
                 },
-                body: formData
+                body: formData,
+                credentials: 'include'
             });
-
-            console.log('Response status:', response.status);
-            console.log('Response headers:', response.headers);
             
-            const responseData = await response.json().catch(e => {
-                console.log('Failed to parse JSON:', e);
-                return null;
-            });
-            console.log('Response data:', responseData);
-
             if (response.ok) {
                 formMessage.innerHTML = '<div class="success-message">Асана успешно добавлена!</div>';
                 setTimeout(() => { window.location.href = '/asanas-page'; }, 1200);
             } else {
-                let msg = 'Ошибка при добавлении асаны';
-                if (response.status === 401 || response.status === 403) {
-                    msg = 'Требуется авторизация или недостаточно прав';
-                } else if (responseData && responseData.detail) {
-                    msg = responseData.detail;
+                const responseData = await response.json().catch(() => null);
+                let msg = responseData?.detail || 'Ошибка при добавлении асаны';
+                if (response.status === 401) {
+                    msg = 'Необходима авторизация. Пожалуйста, войдите в систему.';
+                } else if (response.status === 403) {
+                    msg = 'У вас нет прав для выполнения этого действия.';
+                } else if (response.status === 405) {
+                    msg = 'Метод не разрешен. Пожалуйста, обновите страницу и попробуйте снова.';
                 }
                 formMessage.innerHTML = `<div class="error-message">${msg}</div>`;
+                if (response.status === 401) {
+                    setTimeout(() => { window.location.href = '/login'; }, 1200);
+                }
             }
         } catch (error) {
             console.error('Error:', error);
-            formMessage.innerHTML = '<div class="error-message">Ошибка при добавлении асаны</div>';
+            formMessage.innerHTML = '<div class="error-message">Произошла ошибка при отправке данных</div>';
         } finally {
-            // Включаем кнопку обратно
             submitButton.disabled = false;
             submitButton.textContent = 'Добавить асану';
         }
     }
     
-    // Инициализация при загрузке страницы
+    // При загрузке страницы
     document.addEventListener('DOMContentLoaded', function() {
+        // Обновляем навбар
         updateNavbar();
         
-        // Добавляем обработчик отправки формы ОДИН РАЗ
-        document.getElementById('add-asana-form').addEventListener('submit', handleFormSubmit);
+        const form = document.getElementById('add-asana-form');
+        form.addEventListener('submit', handleFormSubmit);
         
-        // Инициализация обработчиков событий для радио-кнопок
-        document.querySelectorAll('input[name="name-option"]').forEach(function(radio) {
+        // Обработчики для переключения опций
+        document.querySelectorAll('input[name="name-option"]').forEach(radio => {
             radio.addEventListener('change', handleNameOptionChange);
         });
         
-        document.querySelectorAll('input[name="source-option"]').forEach(function(radio) {
+        document.querySelectorAll('input[name="source-option"]').forEach(radio => {
             radio.addEventListener('change', handleSourceOptionChange);
         });
         

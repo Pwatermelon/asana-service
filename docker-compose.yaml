@@ -12,9 +12,18 @@ services:
     environment:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=asana_auth
-      - POSTGRES_USER=asana_user
-      - POSTGRES_PASSWORD=asana_pass
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - EXPERT_USERNAME=${EXPERT_USERNAME}
+      - EXPERT_PASSWORD=${EXPERT_PASSWORD}
+      - GUEST_USERNAME=${GUEST_USERNAME}
+      - GUEST_PASSWORD=${GUEST_PASSWORD}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
     depends_on:
       - postgres
 
@@ -31,9 +40,9 @@ services:
     image: postgres:15
     restart: always
     environment:
-      POSTGRES_DB: asana_auth
-      POSTGRES_USER: asana_user
-      POSTGRES_PASSWORD: asana_pass
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:

@@ -63,7 +63,7 @@ async def get_user_role(request: Request) -> Optional[str]:
 
 async def set_token(response: Response, token: str, role: str):
     """Store token in encrypted cookie"""
-    expires_at = time.time() + (24 * 60 * 60)  # 24 hours
+    expires_at = time.time() + (7 * 24 * 60 * 60)  # 7 days
     token_data = {
         "token": token,
         "expires_at": expires_at,
@@ -75,7 +75,7 @@ async def set_token(response: Response, token: str, role: str):
         value=encrypted_token,
         httponly=True,
         samesite="lax",
-        max_age=24 * 60 * 60
+        max_age=7 * 24 * 60 * 60  # 7 days
     )
     logger.info("Saved token in cookie")
 
@@ -285,7 +285,7 @@ async def asanas_list(request: Request):
         asanas = await api_client.get_asanas(token)
         grouped_asanas = {}
         for asana in asanas:
-            first_letter = asana['name']['ru'][0].upper() if asana['name']['ru'] else "?"
+            first_letter = asana['name']['name_ru'][0].upper() if asana['name']['name_ru'] else "?"
             if first_letter not in grouped_asanas:
                 grouped_asanas[first_letter] = []
             grouped_asanas[first_letter].append(asana)
@@ -318,7 +318,7 @@ async def asanas_by_letter(request: Request, letter: str):
         is_authenticated = token is not None
         asanas = await api_client.get_asanas_by_letter(letter, token)
         all_asanas = await api_client.get_asanas(token)
-        alphabet = sorted(set(asana['name']['ru'][0].upper() for asana in all_asanas if asana['name']['ru']))
+        alphabet = sorted(set(asana['name']['name_ru'][0].upper() for asana in all_asanas if asana['name']['name_ru']))
         return templates.TemplateResponse("asana_list.html", {
             "request": request, 
             "asanas": asanas,
@@ -335,29 +335,6 @@ async def asanas_by_letter(request: Request, letter: str):
         return templates.TemplateResponse("error.html", {
             "request": request,
             "error": "Failed to load asanas"
-        })
-
-@app.get("/asanas/by-source/{source_id}", response_class=HTMLResponse)
-async def asanas_by_source(request: Request, source_id: str):
-    try:
-        token = await get_token_for_api(request)
-        asanas = await api_client.get_asanas_by_source(source_id, token)
-        sources = await api_client.get_sources(token)
-        
-        # Находим информацию о текущем источнике
-        current_source = next((s for s in sources if s['id'] == source_id), None)
-        
-        return templates.TemplateResponse("source_asanas.html", {
-            "request": request, 
-            "asanas": asanas,
-            "source": current_source,
-            "year": datetime.datetime.now().year
-        })
-    except Exception as e:
-        logger.error(f"Error loading asanas by source: {str(e)}")
-        return templates.TemplateResponse("error.html", {
-            "request": request,
-            "error": "Failed to load asanas for source"
         })
 
 @app.get("/sources", response_class=HTMLResponse)
@@ -394,7 +371,9 @@ async def delete_source(source_id: str, request: Request):
         logger.error("FRONTEND: Нет токена авторизации!")
         raise HTTPException(status_code=401, detail="Not authenticated")
     try:
-        result = await api_client.delete_source(source_id, token)
+        # Формируем полный URI источника
+        full_uri = f"http://www.semanticweb.org/platinum_watermelon/ontologies/Asana#source_{source_id}"
+        result = await api_client.delete_source(full_uri, token)
         logger.info(f"FRONTEND: Ответ от бэкенда: {result}")
         return {"message": "Source deleted successfully"}
     except Exception as e:
@@ -582,23 +561,49 @@ async def add_asana_form(request: Request):
             "error": "Не удалось загрузить данные для формы добавления асаны"
         })
 
-@app.get("/asana/{asana_id}", response_class=HTMLResponse)
+@app.get("/asana/{asana_id}-page", response_class=HTMLResponse)
 async def asana_detail(request: Request, asana_id: str):
     try:
-        asanas = await api_client.get_asanas()
-        asana = next((a for a in asanas if a.get('id') == asana_id), None)
+        logger.info(f"FRONTEND: Получен запрос на просмотр асаны: {asana_id}")
+        token = await get_token_for_api(request)
+        user_role = await get_user_role(request)
+        is_admin = user_role == "admin"
+        is_expert_or_admin = user_role in ["admin", "expert"]
+        is_authenticated = token is not None
+            
+        logger.info("FRONTEND: Получаем список всех асан...")
+        asanas = await api_client.get_asanas(token)
+        
+        # Добавляем префикс asana_ если его нет
+        if not asana_id.startswith('asana_'):
+            asana_id = f"asana_{asana_id}"
+        
+        # Формируем полный URI для сравнения
+        full_uri = f"http://www.semanticweb.org/platinum_watermelon/ontologies/Asana#{asana_id}"
+        asana = next((a for a in asanas if a.get('id') == full_uri), None)
+        
         if not asana:
+            logger.error(f"FRONTEND: Асана не найдена: {asana_id}")
             return templates.TemplateResponse("error.html", {
                 "request": request,
                 "error": "Асана не найдена"
             })
-        user_role = await get_user_role(request)
-        is_admin = user_role == "admin"
-        is_expert_or_admin = user_role in ["admin", "expert"]
-        is_authenticated = await get_current_token(request) is not None
+            
         sources = []
-        if user_role in ["admin", "expert"]:
-            sources = await api_client.get_sources()
+        if is_expert_or_admin and token:
+            logger.info("FRONTEND: Получаем список источников для эксперта/админа...")
+            sources = await api_client.get_sources(token)
+            
+        # Преобразуем источники фотографий в объекты
+        if 'photos' in asana:
+            for photo in asana['photos']:
+                if isinstance(photo, dict) and isinstance(photo.get('source'), str):
+                    source_id = photo['source'].split('#')[-1]
+                    source = next((s for s in sources if s['id'] == photo['source']), None)
+                    if source:
+                        photo['source'] = source
+            
+        logger.info("FRONTEND: Отображаем страницу асаны")
         return templates.TemplateResponse("asana_detail.html", {
             "request": request,
             "asana": asana,
@@ -610,10 +615,10 @@ async def asana_detail(request: Request, asana_id: str):
             "year": datetime.datetime.now().year
         })
     except Exception as e:
-        logger.error(f"Error loading asana details: {str(e)}")
+        logger.error(f"FRONTEND: Ошибка при загрузке деталей асаны: {str(e)}")
         return templates.TemplateResponse("error.html", {
             "request": request,
-            "error": "Failed to load asana details"
+            "error": f"Не удалось загрузить информацию об асане: {str(e)}"
         })
 
 @app.post("/asana/{asana_id}/add-photo", response_class=JSONResponse)
@@ -686,21 +691,49 @@ async def check_asana_photo(request: Request, asana_id: str, source_id: str):
 @app.get("/sources/{source_id}/asanas", response_class=HTMLResponse)
 async def source_asanas(request: Request, source_id: str):
     try:
+        logger.info(f"FRONTEND: Получен запрос на просмотр асан источника: {source_id}")
         token = await get_token_for_api(request)
+        if not token:
+            logger.error("FRONTEND: Нет токена авторизации!")
+            return RedirectResponse("/login")
+            
         user_role = await get_user_role(request)
         is_admin = user_role == "admin"
         is_expert_or_admin = user_role in ["admin", "expert"]
         is_authenticated = token is not None
-        source = await api_client.get_source(source_id, token)
-        asanas = await api_client.get_asanas_by_source(source_id, token)
+        
+        logger.info("FRONTEND: Получаем информацию об источнике...")
+        # Извлекаем короткий ID, если передан полный URI
+        short_source_id = source_id.split('#')[-1] if '#' in source_id else source_id
+        if short_source_id.startswith('source_'):
+            short_source_id = short_source_id[7:]  # Убираем префикс 'source_'
+            
+        source = await api_client.get_source(short_source_id, token)
+        if not source:
+            logger.error(f"FRONTEND: Источник не найден: {source_id}")
+            return templates.TemplateResponse("error.html", {
+                "request": request,
+                "error": "Источник не найден"
+            })
+            
+        logger.info("FRONTEND: Получаем список асан источника...")
+        asanas = await api_client.get_asanas_by_source(short_source_id, token)
+        
+        # Добавляем логирование для проверки данных
+        logger.info(f"FRONTEND: Получено {len(asanas)} асан")
+        for asana in asanas:
+            logger.info(f"FRONTEND: Асана {asana['name']['name_ru']} имеет фото: {'photo' in asana and bool(asana['photo'])}")
+        
         grouped_asanas = {}
         for asana in asanas:
-            first_letter = asana['name']['ru'][0].upper() if asana['name']['ru'] else "?"
+            first_letter = asana['name']['name_ru'][0].upper() if asana['name']['name_ru'] else "?"
             if first_letter not in grouped_asanas:
                 grouped_asanas[first_letter] = []
             grouped_asanas[first_letter].append(asana)
         sorted_groups = dict(sorted(grouped_asanas.items()))
         alphabet = sorted(grouped_asanas.keys())
+        
+        logger.info(f"FRONTEND: Найдено {len(asanas)} асан для источника")
         return templates.TemplateResponse("source_asanas.html", {
             "request": request,
             "source": source,
@@ -713,10 +746,10 @@ async def source_asanas(request: Request, source_id: str):
             "year": datetime.datetime.now().year
         })
     except Exception as e:
-        logger.error(f"Error loading source asanas: {str(e)}")
+        logger.error(f"FRONTEND: Ошибка при загрузке асан источника: {str(e)}")
         return templates.TemplateResponse("error.html", {
             "request": request,
-            "error": "Failed to load asanas from source"
+            "error": f"Не удалось загрузить асаны источника: {str(e)}"
         })
 
 @app.get("/api/asanas/search")
@@ -766,4 +799,64 @@ async def api_search_sources(request: Request, query: str):
         return results
     except Exception as e:
         logger.error(f"Error searching sources: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/asana", response_class=JSONResponse)
+async def add_asana(request: Request):
+    try:
+        token = await get_token_for_api(request)
+        if not token:
+            return JSONResponse(status_code=401, content={"detail": "Session expired. Please login again."})
+
+        form = await request.form()
+        result = await api_client.add_asana(
+            selected_name=form.get("selected_name"),
+            selected_source=form.get("selected_source"),
+            new_name_ru=form.get("new_name_ru"),
+            new_name_sanskrit=form.get("new_name_sanskrit"),
+            transliteration=form.get("transliteration"),
+            definition=form.get("definition"),
+            new_source_title=form.get("new_source_title"),
+            new_source_author=form.get("new_source_author"),
+            new_source_year=int(form.get("new_source_year")) if form.get("new_source_year") else None,
+            new_source_publisher=form.get("new_source_publisher"),
+            new_source_pages=int(form.get("new_source_pages")) if form.get("new_source_pages") else None,
+            new_source_annotation=form.get("new_source_annotation"),
+            photo=await form.get("photo").read() if form.get("photo") else None,
+            token=token
+        )
+        return JSONResponse(content=result)
+    except Exception as e:
+        logger.error(f"Error adding asana: {str(e)}")
+        return JSONResponse(status_code=400, content={"detail": str(e)})
+
+@app.post("/sources", response_class=JSONResponse)
+async def add_source(request: Request):
+    try:
+        token = await get_token_for_api(request)
+        if not token:
+            return JSONResponse(status_code=401, content={"detail": "Session expired. Please login again."})
+
+        source_data = await request.json()
+        result = await api_client.add_source(source_data, token)
+        return JSONResponse(content=result)
+    except Exception as e:
+        logger.error(f"Error adding source: {str(e)}")
+        return JSONResponse(status_code=400, content={"detail": str(e)})
+
+@app.delete("/asanas/{asana_id}")
+async def delete_asana(asana_id: str, request: Request):
+    logger.info(f"FRONTEND: Получен запрос на удаление асаны: {asana_id}")
+    token = await get_current_token(request)
+    if not token:
+        logger.error("FRONTEND: Нет токена авторизации!")
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        # Формируем полный URI асаны
+        full_uri = f"http://www.semanticweb.org/platinum_watermelon/ontologies/Asana#asana_{asana_id}"
+        result = await api_client.delete_asana(full_uri, token)
+        logger.info(f"FRONTEND: Ответ от бэкенда: {result}")
+        return {"message": "Asana deleted successfully"}
+    except Exception as e:
+        logger.error(f"FRONTEND: Ошибка при удалении асаны: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))

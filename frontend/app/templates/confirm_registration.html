@@ -7,30 +7,114 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <title>Подтверждение регистрации</title>
     <style>
-    .auth-container { background: white; max-width: 400px; margin: 2em auto; padding: 2em; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .auth-title { text-align: center; font-size: 1.8em; margin-bottom: 1em; color: #111; }
-    .confirmation-info { text-align: center; margin-bottom: 1.5em; color: #4b5563; font-size: 0.95em; }
+    .auth-container { 
+        background: white; 
+        max-width: 400px; 
+        margin: 4em auto; 
+        padding: 2.5em; 
+        border-radius: 12px; 
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    }
+    .auth-title { 
+        text-align: center; 
+        font-size: 1.8em; 
+        margin-bottom: 1em; 
+        color: #1a1a1a;
+        font-weight: 600;
+    }
+    .confirmation-info { 
+        text-align: center; 
+        margin-bottom: 2em; 
+        color: #4b5563; 
+        font-size: 1em;
+        line-height: 1.5;
+    }
+    .code-input {
+        letter-spacing: 0.35em;
+        font-size: 1.2em;
+        text-align: center;
+        padding: 0.75em;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        width: 100%;
+        margin-bottom: 1.5em;
+        transition: border-color 0.2s;
+    }
+    .code-input:focus {
+        border-color: #2563eb;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    }
+    .error-message {
+        background: #fee2e2;
+        border: 1px solid #ef4444;
+        color: #b91c1c;
+        padding: 1em;
+        border-radius: 8px;
+        margin-bottom: 1.5em;
+        text-align: center;
+    }
+    .success-message {
+        background: #dcfce7;
+        border: 1px solid #22c55e;
+        color: #15803d;
+        padding: 1em;
+        border-radius: 8px;
+        margin-bottom: 1.5em;
+        text-align: center;
+        display: none;
+    }
+    .btn-primary {
+        width: 100%;
+        padding: 0.75em;
+        font-size: 1.1em;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .btn-primary:hover {
+        background: #1d4ed8;
+    }
+    .btn-primary:active {
+        background: #1e40af;
+    }
     </style>
 </head>
 <body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="/" class="navbar-brand">Каталог<br>Асан</a>
+            <div class="navbar-links">
+                <a href="/asanas" class="nav-link">Каталог асан</a>
+                <a href="/sources" class="nav-link">Источники</a>
+                <a href="/about" class="nav-link">О проекте</a>
+            </div>
+        </div>
+    </nav>
+
     <div class="container">
         <div class="auth-container">
             <h1 class="auth-title">Подтверждение регистрации</h1>
             <p class="confirmation-info">
-                Мы отправили код подтверждения на ваш email. 
+                Мы отправили код подтверждения на ваш email.<br>
                 Пожалуйста, введите его ниже для активации аккаунта.
             </p>
             
             <div id="error-message" class="error-message" style="display: none;"></div>
-            <div id="success-message" class="success-message">
-                Ваш аккаунт успешно подтвержден! Перенаправление на страницу входа...
-            </div>
+            <div id="success-message" class="success-message"></div>
             
             <form id="confirm-form">
-                <div class="form-group">
-                    <label for="confirmation-code">Код подтверждения</label>
-                    <input type="text" id="confirmation-code" name="confirmation-code" required>
-                </div>
+                <input type="text" 
+                       id="confirmation-code" 
+                       name="confirmation-code" 
+                       class="code-input"
+                       placeholder="Введите код"
+                       maxlength="6"
+                       autocomplete="off"
+                       required>
                 
                 <button type="submit" class="btn-primary">Подтвердить</button>
             </form>
@@ -42,6 +126,9 @@
         e.preventDefault();
         
         const code = document.getElementById('confirmation-code').value;
+        const submitButton = this.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Проверка...';
         
         try {
             const response = await fetch('/confirm-registration', {
@@ -56,7 +143,9 @@
             
             if (response.ok) {
                 // Показываем сообщение об успехе
-                document.getElementById('success-message').style.display = 'block';
+                const successMessage = document.getElementById('success-message');
+                successMessage.textContent = 'Ваш аккаунт успешно подтвержден! Перенаправление на страницу входа...';
+                successMessage.style.display = 'block';
                 document.getElementById('confirm-form').style.display = 'none';
                 
                 // Перенаправляем на страницу входа через 3 секунды
@@ -64,11 +153,15 @@
                     window.location.href = '/login';
                 }, 3000);
             } else {
-                showError(data.detail || 'Ошибка при подтверждении');
+                showError(data.detail || 'Ошибка при подтверждении кода');
+                submitButton.disabled = false;
+                submitButton.textContent = 'Подтвердить';
             }
         } catch (error) {
             showError('Произошла ошибка при отправке данных');
             console.error(error);
+            submitButton.disabled = false;
+            submitButton.textContent = 'Подтвердить';
         }
     });
     
@@ -76,7 +169,17 @@
         const errorElement = document.getElementById('error-message');
         errorElement.textContent = message;
         errorElement.style.display = 'block';
+        
+        // Скрываем ошибку через 5 секунд
+        setTimeout(() => {
+            errorElement.style.display = 'none';
+        }, 5000);
     }
+
+    // Форматирование поля ввода кода
+    document.getElementById('confirmation-code').addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+    });
     </script>
     
     <footer>

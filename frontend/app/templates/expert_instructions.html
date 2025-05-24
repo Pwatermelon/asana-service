@@ -181,36 +181,151 @@
     </footer>
     
     <script>
-    // Функция для проверки авторизации
-    async function checkAuth() {
-        try {
-            const response = await fetch('/api/auth/check');
-            const data = await response.json();
-            return {
-                isAuthenticated: data.is_authenticated,
-                userRole: data.role
-            };
-        } catch (error) {
-            console.error('Error checking auth:', error);
-            return {
-                isAuthenticated: false,
-                userRole: null
-            };
+        function getToken() {
+            // Сначала пробуем получить токен из cookie
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'session_token') {
+                    return value;
+                }
+            }
+            return null;
         }
-    }
 
-    // При загрузке страницы
-    document.addEventListener('DOMContentLoaded', async function() {
-        // Проверяем авторизацию
-        const { isAuthenticated, userRole } = await checkAuth();
-        window.isExpertOrAdmin = userRole === 'admin' || userRole === 'expert';
-        
-        // Показываем/скрываем кнопки редактирования
-        const adminControls = document.getElementById('admin-controls');
-        if (adminControls) {
-            adminControls.style.display = userRole === 'admin' ? 'block' : 'none';
+        function updateNavbar() {
+            const navbarActions = document.getElementById('navbar-actions');
+            const userRole = '{{ user_role }}';  // Получаем роль из шаблона
+            
+            if (userRole && userRole !== 'guest') {
+                if (userRole === 'admin' || userRole === 'expert') {
+                    navbarActions.innerHTML = `
+                        <a href="/asana/add" class="btn-primary">Добавить асану</a>
+                        <a href="/sources/add" class="btn-primary" style="margin-left: 10px;">Добавить источник</a>
+                        <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                    `;
+                } else {
+                    navbarActions.innerHTML = `
+                        <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                    `;
+                }
+            } else {
+                navbarActions.innerHTML = `
+                    <a href="/login" class="btn-primary">Войти</a>
+                `;
+            }
         }
-    });
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const formMessage = document.getElementById('form-message');
+            formMessage.innerHTML = '';
+            const content = document.getElementById('content').value;
+
+            if (!content.trim()) {
+                formMessage.innerHTML = '<div class="error-message">Содержание не может быть пустым</div>';
+                return;
+            }
+
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Сохранение...';
+
+            try {
+                const response = await fetch('/expert-instructions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ content: content }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    formMessage.innerHTML = '<div class="success-message">Инструкции обновлены</div>';
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    const responseData = await response.json().catch(() => null);
+                    let msg = responseData?.detail || 'Ошибка при обновлении инструкций';
+                    formMessage.innerHTML = `<div class="error-message">${msg}</div>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                formMessage.innerHTML = '<div class="error-message">Произошла ошибка при отправке данных</div>';
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Сохранить';
+            }
+        }
+
+        // При загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNavbar();
+            
+            const btnEdit = document.getElementById('btn-edit');
+            const btnSave = document.getElementById('btn-save');
+            const btnCancel = document.getElementById('btn-cancel');
+            const editForm = document.getElementById('edit-form');
+            const editContent = document.getElementById('edit-content');
+            const instructionsText = document.getElementById('instructions-text');
+
+            if (btnEdit) {
+                btnEdit.addEventListener('click', function() {
+                    editForm.style.display = 'block';
+                    btnEdit.style.display = 'none';
+                    editContent.value = instructionsText.innerText;
+                });
+            }
+
+            if (btnCancel) {
+                btnCancel.addEventListener('click', function() {
+                    editForm.style.display = 'none';
+                    btnEdit.style.display = 'inline-block';
+                });
+            }
+
+            if (btnSave) {
+                btnSave.addEventListener('click', async function() {
+                    const token = getToken();
+                    if (!token) {
+                        alert('Требуется авторизация');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('/expert-instructions', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                content: editContent.value
+                            })
+                        });
+
+                        if (response.ok) {
+                            instructionsText.innerHTML = editContent.value;
+                            editForm.style.display = 'none';
+                            btnEdit.style.display = 'inline-block';
+                        } else {
+                            let msg = 'Ошибка при сохранении';
+                            if (response.status === 401 || response.status === 403) {
+                                msg = 'Недостаточно прав для выполнения операции';
+                            } else {
+                                const data = await response.json();
+                                msg = data.detail || msg;
+                            }
+                            alert(msg);
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Произошла ошибка при сохранении');
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html> 

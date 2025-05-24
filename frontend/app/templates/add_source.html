@@ -119,56 +119,124 @@
     </div>
     
     <script>
-        // Добавляем базовый URL
-        const BASE_URL = window.location.origin;
+        function getToken() {
+            // Сначала пробуем получить токен из cookie
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'session_token') {
+                    try {
+                        // Декодируем JWT токен
+                        const tokenData = JSON.parse(atob(value.split('.')[1]));
+                        // Проверяем срок действия
+                        if (tokenData.expires_at && tokenData.expires_at < Date.now() / 1000) {
+                            window.location.href = '/login';
+                            return null;
+                        }
+                        return value;
+                    } catch (e) {
+                        console.error('Error parsing token:', e);
+                        return null;
+                    }
+                }
+            }
+            return null;
+        }
 
-        document.getElementById('add-source-form').addEventListener('submit', async function(e) {
+        function updateNavbar() {
+            const navbarActions = document.getElementById('navbar-actions');
+            const userRole = '{{ user_role }}';  // Получаем роль из шаблона
+            
+            if (userRole && userRole !== 'guest') {
+                if (userRole === 'admin' || userRole === 'expert') {
+                    navbarActions.innerHTML = `
+                        <a href="/asana/add" class="btn-primary">Добавить асану</a>
+                        <a href="/sources/add" class="btn-primary" style="margin-left: 10px;">Добавить источник</a>
+                        <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                    `;
+                } else {
+                    navbarActions.innerHTML = `
+                        <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                    `;
+                }
+            } else {
+                navbarActions.innerHTML = `
+                    <a href="/login" class="btn-primary">Войти</a>
+                `;
+            }
+        }
+
+        async function handleFormSubmit(e) {
             e.preventDefault();
             const formMessage = document.getElementById('form-message');
             formMessage.innerHTML = '';
-            // Базовая валидация
-            const author = document.getElementById('author').value.trim();
+
+            // Проверка обязательных полей
             const title = document.getElementById('title').value.trim();
+            const author = document.getElementById('author').value.trim();
             const year = document.getElementById('year').value.trim();
-            if (!author || !title || !year) {
-                formMessage.innerHTML = '<div class="error-message" style="display:block;">Поля Автор, Название и Год обязательны</div>';
+
+            if (!title || !author || !year) {
+                formMessage.innerHTML = '<div class="error-message">Заполните обязательные поля: название, автор, год</div>';
                 return;
             }
-            const formData = {
-                author: author,
+
+            // Отключаем кнопку отправки
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Добавление...';
+
+            // Создаем объект с данными
+            const sourceData = {
                 title: title,
-                publisher: document.getElementById('publisher').value,
+                author: author,
                 year: parseInt(year),
-                pages: parseInt(document.getElementById('pages').value) || null,
-                annotation: document.getElementById('annotation').value
+                publisher: document.getElementById('publisher').value.trim() || undefined,
+                pages: document.getElementById('pages').value ? parseInt(document.getElementById('pages').value) : undefined,
+                annotation: document.getElementById('annotation').value.trim() || undefined
             };
-            const token = localStorage.getItem('token');
+
             try {
-                const response = await fetch(`${BASE_URL}/sources`, {
+                const response = await fetch('/sources', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${getToken()}`
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(sourceData),
+                    credentials: 'include'
                 });
+
                 if (response.ok) {
-                    formMessage.innerHTML = '<div class="success-message" style="display:block;">Источник успешно добавлен!</div>';
+                    formMessage.innerHTML = '<div class="success-message">Источник успешно добавлен!</div>';
                     setTimeout(() => { window.location.href = '/sources'; }, 1200);
                 } else {
-                    let msg = 'Ошибка при добавлении источника';
-                    if (response.status === 401 || response.status === 403) {
-                        msg = 'Требуется авторизация или недостаточно прав';
-                    } else {
-                        const data = await response.json();
-                        msg = data.detail || msg;
+                    const responseData = await response.json().catch(() => null);
+                    let msg = responseData?.detail || 'Ошибка при добавлении источника';
+                    if (response.status === 401) {
+                        msg = 'Необходима авторизация. Пожалуйста, войдите в систему.';
+                    } else if (response.status === 403) {
+                        msg = 'У вас нет прав для выполнения этого действия.';
+                    } else if (response.status === 405) {
+                        msg = 'Метод не разрешен. Пожалуйста, обновите страницу и попробуйте снова.';
                     }
-                    formMessage.innerHTML = `<div class="error-message" style="display:block;">${msg}</div>`;
+                    formMessage.innerHTML = `<div class="error-message">${msg}</div>`;
+                    if (response.status === 401) {
+                        setTimeout(() => { window.location.href = '/login'; }, 1200);
+                    }
                 }
             } catch (error) {
                 console.error('Error:', error);
-                formMessage.innerHTML = '<div class="error-message" style="display:block;">Ошибка при отправке данных</div>';
+                formMessage.innerHTML = '<div class="error-message">Произошла ошибка при отправке данных</div>';
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Добавить источник';
             }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNavbar();
+            document.getElementById('add-source-form').addEventListener('submit', handleFormSubmit);
         });
     </script>
     

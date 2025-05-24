@@ -20,7 +20,7 @@ from app.ontology import (
 from app.config import logger
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
-from app.models import Base, User, Token, UserRegistration, UserLogin, PasswordReset, PasswordResetConfirm, AboutProject, ExpertInstructions
+from app.models import Base, User, Token, UserRegistration, UserLogin, PasswordReset, PasswordResetConfirm, AboutProject, ExpertInstructions, UserRole
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from passlib.context import CryptContext
@@ -57,6 +57,10 @@ class AsanaCreate(BaseModel):
 class TextContent(BaseModel):
     content: str
 
+class UserRoleUpdate(BaseModel):
+    username: str
+    new_role: UserRole
+
 app = FastAPI(
     title=config.APP_NAME,
     description=config.APP_DESCRIPTION,
@@ -79,32 +83,68 @@ Base.metadata.create_all(bind=engine)
 
 # Создаём пользователя admin:admin123, если его нет
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-def create_default_admin():
+
+def create_default_users():
+    """Создание пользователей по умолчанию (admin, expert и guest)"""
     db = SessionLocal()
-    if not db.query(User).filter(User.username == "admin").first():
+    
+    # Создаем admin пользователя
+    admin_username = os.getenv("ADMIN_USERNAME", "admin")
+    admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
+    
+    if not db.query(User).filter(User.username == admin_username).first():
         admin = User(
-            username="admin", 
-            password_hash=pwd_context.hash("admin123"),
+            username=admin_username,
+            password_hash=pwd_context.hash(admin_password),
             role="admin",
             is_confirmed=True
         )
         db.add(admin)
-        db.commit()
+        logger.info(f"Created default admin user: {admin_username}")
+    
+    # Создаем expert пользователя
+    expert_username = os.getenv("EXPERT_USERNAME", "expert")
+    expert_password = os.getenv("EXPERT_PASSWORD", "expert123")
+    
+    if not db.query(User).filter(User.username == expert_username).first():
+        expert = User(
+            username=expert_username,
+            password_hash=pwd_context.hash(expert_password),
+            role="expert",
+            is_confirmed=True
+        )
+        db.add(expert)
+        logger.info(f"Created default expert user: {expert_username}")
+    
+    # Создаем guest пользователя
+    guest_username = os.getenv("GUEST_USERNAME", "guest")
+    guest_password = os.getenv("GUEST_PASSWORD", "guest123")
+    
+    if not db.query(User).filter(User.username == guest_username).first():
+        guest = User(
+            username=guest_username,
+            password_hash=pwd_context.hash(guest_password),
+            role="guest",
+            is_confirmed=True
+        )
+        db.add(guest)
+        logger.info(f"Created default guest user: {guest_username}")
     
     # Создаем записи о проекте и инструкции, если их нет
     if not db.query(AboutProject).first():
         about = AboutProject(content="О проекте каталога асан")
         db.add(about)
-        db.commit()
+        logger.info("Created default about project content")
     
     if not db.query(ExpertInstructions).first():
         instructions = ExpertInstructions(content="Инструкция для экспертов")
         db.add(instructions)
-        db.commit()
+        logger.info("Created default expert instructions")
     
+    db.commit()
     db.close()
 
-create_default_admin()
+create_default_users()
 
 # Маршруты аутентификации и авторизации
 @app.post("/token", response_model=Token)
@@ -125,9 +165,29 @@ async def login_form(user_login: UserLogin):
     if not user:
         logger.warning(f"Failed login form attempt for user: {user_login.username}")
         raise HTTPException(status_code=400, detail="Incorrect username or password")
-    access_token = create_access_token(data={"sub": user["username"]}, remember_me=user_login.remember_me)
+    
+    # Создаем токен с информацией о пользователе и его роли
+    access_token = create_access_token(
+        data={"sub": user["username"], "role": user["role"]}, 
+        remember_me=user_login.remember_me
+    )
+    
+    # Создаем response с cookie
+    response = JSONResponse(
+        content={"access_token": access_token, "token_type": "bearer", "role": user["role"]}
+    )
+    
+    # Устанавливаем cookie
+    response.set_cookie(
+        key="session_token",
+        value=access_token,
+        httponly=True,
+        samesite="lax",
+        max_age=44640 * 60 if user_login.remember_me else 1440 * 60  # в секундах
+    )
+    
     logger.info(f"Successful login form for user: {user_login.username}")
-    return {"access_token": access_token, "token_type": "bearer", "role": user["role"]}
+    return response
 
 @app.post("/register")
 async def register(user_data: UserRegistration):
@@ -236,7 +296,7 @@ def add_asana_page(request: Request):
     """Страница добавления асаны (только для expert/admin)"""
     user_role = get_user_role_from_request(request)
     if user_role not in ['admin', 'expert']:
-        return RedirectResponse(url="/login")
+        return RedirectResponse(url="/login", status_code=303)  # 303 See Other
     
     # Загружаем существующие названия и источники для выбора
     names = load_asana_names()
@@ -555,7 +615,7 @@ async def get_asana_photo_by_source(asana_id: str, source_id: str):
 templates = Jinja2Templates(directory="frontend/app/templates")
 
 def get_user_role_from_request(request: Request) -> str:
-    token = request.cookies.get('access_token') or request.headers.get('Authorization', '').replace('Bearer ', '')
+    token = request.cookies.get('session_token') or request.headers.get('Authorization', '').replace('Bearer ', '')
     if not token:
         return 'guest'
     try:
@@ -565,10 +625,29 @@ def get_user_role_from_request(request: Request) -> str:
         return 'guest'
 
 def get_asana_by_id(asana_id: str):
+    """
+    Получает асану по ID. Поддерживает как полный URI, так и короткий ID.
+    """
+    logger.info(f"get_asana_by_id called with ID: {asana_id}")
+    
+    # Если передан не полный URI, добавляем префикс
+    if not asana_id.startswith('http'):
+        # Проверяем, начинается ли ID с 'asana_'
+        if not asana_id.startswith('asana_'):
+            asana_id = f"asana_{asana_id}"
+        asana_id = f"http://www.semanticweb.org/platinum_watermelon/ontologies/Asana#{asana_id}"
+    
+    logger.info(f"Searching for asana with URI: {asana_id}")
     asanas = load_asanas()
+    logger.info(f"Loaded {len(asanas)} asanas")
+    
     for asana in asanas:
+        logger.debug(f"Comparing with asana ID: {asana['id']}")
         if asana["id"] == asana_id:
+            logger.info(f"Found matching asana: {asana['name']['name_ru']}")
             return asana
+    
+    logger.warning(f"No asana found with ID: {asana_id}")
     return None
 
 @app.get("/asanas-page")
@@ -600,7 +679,32 @@ def asanas_page(request: Request, search_query: str = '', current_letter: str = 
 
 @app.get("/asana/{asana_id}-page", tags=["asana"])
 def asana_detail_page(request: Request, asana_id: str = Path(...)):
+    """
+    Страница деталей асаны. Поддерживает как полный URI, так и короткий ID.
+    """
+    logger.info(f"Received request for asana details with ID: {asana_id}")
+    
+    # Убираем суффикс -page, если он есть
+    if asana_id.endswith('-page'):
+        asana_id = asana_id[:-5]
+    
+    # Если передан не полный URI, добавляем префикс
+    if not asana_id.startswith('http'):
+        # Проверяем, начинается ли ID с 'asana_'
+        if not asana_id.startswith('asana_'):
+            asana_id = f"asana_{asana_id}"
+        full_uri = f"http://www.semanticweb.org/platinum_watermelon/ontologies/Asana#{asana_id}"
+        logger.info(f"Converted ID to full URI: {full_uri}")
+        asana_id = full_uri
+    
+    logger.info(f"Looking for asana with ID: {asana_id}")
     asana = get_asana_by_id(asana_id)
+    
+    if not asana:
+        logger.error(f"Asana not found with ID: {asana_id}")
+        raise HTTPException(status_code=404, detail="Асана не найдена")
+    
+    logger.info(f"Found asana: {asana['name']['name_ru']}")
     sources = load_sources()
     return templates.TemplateResponse(
         "asana_detail.html",
@@ -620,14 +724,17 @@ def sources_page(request: Request):
 @app.get("/settings-page")
 def settings_page(request: Request):
     user_role = get_user_role_from_request(request)
+    if user_role != 'admin':
+        return RedirectResponse(url="/login", status_code=303)
+    
     return templates.TemplateResponse(
         "settings.html",
         {
             "request": request,
             "user_role": user_role,
-            "is_admin": user_role == 'admin',
-            "is_authenticated": user_role != 'guest',
-            "is_expert_or_admin": user_role in ['admin', 'expert'],
+            "is_admin": True,
+            "is_authenticated": True,
+            "is_expert_or_admin": True,
         }
     )
 
@@ -638,10 +745,7 @@ def about_page(request: Request):
     db.close()
     content = about.content if about else "Информация о проекте отсутствует"
     
-    # Получаем роль пользователя
     user_role = get_user_role_from_request(request)
-    is_authenticated = user_role != 'guest'
-    is_expert_or_admin = user_role in ['admin', 'expert']
     
     return templates.TemplateResponse(
         "about_project.html", 
@@ -649,8 +753,8 @@ def about_page(request: Request):
             "request": request, 
             "content": content, 
             "user_role": user_role,
-            "is_authenticated": is_authenticated,
-            "is_expert_or_admin": is_expert_or_admin,
+            "is_authenticated": user_role != 'guest',
+            "is_expert_or_admin": user_role in ['admin', 'expert'],
             "is_admin": user_role == 'admin'
         }
     )
@@ -661,14 +765,27 @@ def expert_instructions_page(request: Request):
     instructions = db.query(ExpertInstructions).first()
     db.close()
     content = instructions.content if instructions else "Инструкции для экспертов отсутствуют"
-    return templates.TemplateResponse("expert_instructions.html", {"request": request, "content": content, "user_role": get_user_role_from_request(request)})
+    
+    user_role = get_user_role_from_request(request)
+    
+    return templates.TemplateResponse(
+        "expert_instructions.html",
+        {
+            "request": request,
+            "content": content,
+            "user_role": user_role,
+            "is_authenticated": user_role != 'guest',
+            "is_expert_or_admin": user_role in ['admin', 'expert'],
+            "is_admin": user_role == 'admin'
+        }
+    )
 
 @app.get("/sources/add")
 def add_source_page(request: Request):
     """Страница добавления источника (только для expert/admin)"""
     user_role = get_user_role_from_request(request)
     if user_role not in ['admin', 'expert']:
-        return RedirectResponse(url="/login")
+        return RedirectResponse(url="/login", status_code=303)
     
     return templates.TemplateResponse(
         "add_source.html",
@@ -685,101 +802,47 @@ def add_source_page(request: Request):
 # API routes
 @app.get("/api/asanas/search")
 async def api_search_asanas(query: str, fuzzy: bool = True):
-    """API: Поиск асан по названию"""
-    logger.info(f"API: Searching asanas with query: {query}, fuzzy: {fuzzy}")
-    if fuzzy:
-        asanas = search_asanas_by_name(query)
-    else:
-        all_asanas = load_asanas()
-        asanas = [a for a in all_asanas if query.lower() in a["name"]["ru"].lower()]
-    return asanas
-
-@app.post("/api/asana")
-async def api_post_asana(
-    selected_name: str = Form(...),
-    new_name_ru: Optional[str] = Form(None),
-    new_name_sanskrit: Optional[str] = Form(None),
-    transliteration: Optional[str] = Form(None),
-    definition: Optional[str] = Form(None),
-    selected_source: str = Form(...),
-    new_source_title: Optional[str] = Form(None),
-    new_source_author: Optional[str] = Form(None),
-    new_source_year: Optional[int] = Form(None),
-    new_source_publisher: Optional[str] = Form(None),
-    new_source_pages: Optional[int] = Form(None),
-    new_source_annotation: Optional[str] = Form(None),
-    photo: UploadFile = File(...),
-    user: str = Depends(is_expert_or_admin)
-):
-    """API: Добавить новую асану"""
+    """Поиск асан по имени"""
     try:
-        logger.info(f"API: Adding new asana by user: {user}")
-        logger.debug(f"Form data received - selected_name: {selected_name}, selected_source: {selected_source}")
-        logger.debug(f"New name data: ru={new_name_ru}, sanskrit={new_name_sanskrit}")
-        logger.debug(f"New source data: title={new_source_title}, author={new_source_author}, year={new_source_year}")
-        logger.debug(f"Photo filename: {photo.filename}")
-        
-        # Обработка названия
-        name_id = None
-        if selected_name != "new":
-            logger.debug(f"Using existing name ID: {selected_name}")
-            name_id = selected_name
-        elif new_name_ru:
-            logger.info("Creating new asana name")
-            name_data = {
-                "name_ru": new_name_ru
-            }
-            if new_name_sanskrit:
-                name_data["name_sanskrit"] = new_name_sanskrit
-            if transliteration:
-                name_data["transliteration"] = transliteration
-            if definition:
-                name_data["definition"] = definition
-            name_id = add_asana_name(name_data)
-            logger.debug(f"Created new name with ID: {name_id}")
-        else:
-            logger.error("Missing required name fields for new name")
-            raise HTTPException(status_code=400, detail="При добавлении нового названия поле названия на русском обязательно")
-
-        # Обработка источника
-        source_id = None
-        if selected_source != "new":
-            logger.debug(f"Using existing source ID: {selected_source}")
-            source_id = selected_source
-        elif all([new_source_title, new_source_author, new_source_year]):
-            logger.info("Creating new source")
-            source_data = {
-                "title": new_source_title,
-                "author": new_source_author,
-                "year": int(new_source_year)
-            }
-            
-            # Добавляем необязательные поля, если они есть
-            if new_source_publisher:
-                source_data["publisher"] = new_source_publisher
-            if new_source_pages:
-                source_data["pages"] = int(new_source_pages)
-            if new_source_annotation:
-                source_data["annotation"] = new_source_annotation
-                
-            source_id = add_source(source_data)
-            logger.debug(f"Created new source with ID: {source_id}")
-        else:
-            logger.error("Missing required source fields for new source")
-            raise HTTPException(status_code=400, detail="При добавлении нового источника поля автора, названия и года обязательны")
-
-        # Обработка фото
-        logger.info("Processing photo upload")
-        photo_content = await photo.read()
-        photo_base64 = base64.b64encode(photo_content).decode()
-        logger.debug(f"Photo size in bytes: {len(photo_content)}")
-
-        # Добавляем асану
-        logger.info("Adding asana to ontology")
-        asana_id = add_asana(name_id=name_id, source_id=source_id, photo_base64=photo_base64)
-        logger.info(f"Successfully created asana with ID: {asana_id}")
-        
-        return {"message": "Asana added successfully", "id": asana_id}
+        asanas = search_asanas_by_name(query, fuzzy)
+        return {"asanas": asanas}
     except Exception as e:
-        logger.error(f"Error adding asana: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Error searching asanas: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/admin/update-user-role")
+async def update_user_role(role_update: UserRoleUpdate, admin: str = Depends(is_admin)):
+    """Обновить роль пользователя (только для администратора)"""
+    logger.info(f"Updating user role. Admin: {admin}, User: {role_update.username}, New role: {role_update.new_role}")
+    
+    db = SessionLocal()
+    user = db.query(User).filter(User.username == role_update.username).first()
+    
+    if not user:
+        db.close()
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    
+    if not user.is_confirmed:
+        db.close()
+        raise HTTPException(status_code=400, detail="Пользователь должен подтвердить email перед изменением роли")
+    
+    # Запрещаем менять роль администратора
+    if user.role == UserRole.ADMIN:
+        db.close()
+        raise HTTPException(status_code=403, detail="Невозможно изменить роль администратора")
+    
+    user.role = role_update.new_role
+    db.commit()
+    db.close()
+    
+    logger.info(f"Successfully updated role for user {role_update.username} to {role_update.new_role}")
+    return {"username": user.username, "new_role": user.role}
+
+@app.get("/api/auth/check")
+async def check_auth(request: Request):
+    """Проверка авторизации пользователя"""
+    user_role = get_user_role_from_request(request)
+    return {
+        "is_authenticated": user_role != "guest",
+        "role": user_role
+    }

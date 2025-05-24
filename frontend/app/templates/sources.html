@@ -388,7 +388,7 @@
                     {% endif %}
                     
                     <div class="source-actions">
-                        <a href="/sources/{{ source.id }}/asanas" class="btn-view">Посмотреть асаны</a>
+                        <a href="/sources/{{ source.id.split('#')[-1].replace('source_', '') }}/asanas" class="btn-view">Посмотреть асаны</a>
                         {% if is_expert_or_admin %}
                         <button class="btn-delete delete-source" data-id="{{ source.id }}" data-title="{{ source.title }}">Удалить</button>
                         {% endif %}
@@ -446,6 +446,9 @@
                 
                 // Добавляем найденные источники
                 data.forEach(source => {
+                    // Извлекаем короткий ID из полного URI
+                    const sourceShortId = source.id.split('#').pop();
+                    
                     container.innerHTML += `
                         <div class="source-card">
                             <div class="source-header">
@@ -478,7 +481,7 @@
                                 ` : ''}
                                 
                                 <div class="source-actions">
-                                    <a href="/sources/${source.id}/asanas" class="btn-view">Посмотреть асаны</a>
+                                    <a href="/sources/${sourceShortId}/asanas" class="btn-view">Посмотреть асаны</a>
                                     ${window.isExpertOrAdmin ? `
                                     <button class="btn-delete delete-source" data-id="${source.id}" data-title="${source.title}">Удалить</button>
                                     ` : ''}
@@ -505,6 +508,39 @@
         deleteButtons.forEach(button => {
             button.style.display = window.isExpertOrAdmin ? 'inline-block' : 'none';
         });
+    });
+
+    // Обработка удаления источника
+    document.addEventListener('click', async function(e) {
+        if (e.target.classList.contains('delete-source')) {
+            const fullId = e.target.dataset.id;
+            // Извлекаем короткий ID из полного URI (после последнего _)
+            const sourceId = fullId.split('_').pop();
+            const sourceTitle = e.target.dataset.title;
+            
+            if (confirm(`Вы уверены, что хотите удалить источник "${sourceTitle}"?`)) {
+                try {
+                    const response = await fetch(`/sources/${sourceId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        // Удаляем карточку источника из DOM
+                        e.target.closest('.source-card').remove();
+                        alert('Источник успешно удален');
+                    } else {
+                        const data = await response.json();
+                        alert(data.detail || 'Ошибка при удалении источника');
+                    }
+                } catch (error) {
+                    console.error('Error deleting source:', error);
+                    alert('Ошибка при удалении источника');
+                }
+            }
+        }
     });
     </script>
 </body>

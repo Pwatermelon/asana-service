@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <title>{{ asana.name.ru }} - Детали асаны</title>
+    <title>{{ asana.name.name_ru }} - Детали асаны</title>
     <style>
     .asana-detail { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin: 2em 0; padding: 2em; display: flex; flex-direction: column; gap: 2em; }
     </style>
@@ -46,7 +46,7 @@
     <div class="container">
         <div class="asana-detail">
             <div class="asana-header">
-                <h1 class="asana-title">{{ asana.name.ru }}</h1>
+                <h1 class="asana-title">{{ asana.name.name_ru }}</h1>
                 {% if is_expert_or_admin %}
                 <div class="admin-actions">
                     <a href="/asana/{{ asana.id }}/edit" class="btn-primary">Редактировать</a>
@@ -60,11 +60,11 @@
                     <div class="detail-section">
                         <h2 class="detail-title">Названия</h2>
                         <div class="detail-item">
-                            <strong>На русском:</strong> {{ asana.name.ru }}
+                            <strong>На русском:</strong> {{ asana.name.name_ru }}
                         </div>
-                        {% if asana.name.sanskrit %}
+                        {% if asana.name.name_sanskrit %}
                         <div class="detail-item">
-                            <strong>На санскрите:</strong> {{ asana.name.sanskrit }}
+                            <strong>На санскрите:</strong> {{ asana.name.name_sanskrit }}
                         </div>
                         {% endif %}
                         {% if asana.name.transliteration %}
@@ -72,9 +72,9 @@
                             <strong>Транслитерация:</strong> {{ asana.name.transliteration }}
                         </div>
                         {% endif %}
-                        {% if asana.name.translation %}
+                        {% if asana.name.definition %}
                         <div class="detail-item">
-                            <strong>Перевод названия:</strong> {{ asana.name.translation }}
+                            <strong>Пояснение:</strong> {{ asana.name.definition }}
                         </div>
                         {% endif %}
                     </div>
@@ -85,10 +85,20 @@
                     <div class="photo-gallery">
                         {% for photo in asana.photos %}
                         <div class="photo-container">
-                            <img src="data:image/jpeg;base64,{{ photo.image }}" alt="{{ asana.name.ru }}" class="gallery-item">
-                            <div class="photo-source">
-                                <a href="/sources/{{ photo.source.id }}">{{ photo.source.author }} - {{ photo.source.title }}</a>
-                            </div>
+                            {% if photo is mapping %}
+                                <img src="data:image/jpeg;base64,{{ photo.image }}" alt="{{ asana.name.name_ru }}" class="gallery-item">
+                                {% if photo.source is mapping %}
+                                    <div class="photo-source">
+                                        <a href="/sources/{{ photo.source.id.split('#')[-1] }}">{{ photo.source.author }} - {{ photo.source.title }}</a>
+                                    </div>
+                                {% else %}
+                                    <div class="photo-source">
+                                        <a href="/sources/{{ photo.source.split('#')[-1] }}">Источник {{ photo.source.split('#')[-1] }}</a>
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <img src="data:image/jpeg;base64,{{ photo }}" alt="{{ asana.name.name_ru }}" class="gallery-item">
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>

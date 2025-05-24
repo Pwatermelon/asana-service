@@ -297,24 +297,24 @@
                     <div class="asana-grid">
                         {% for asana in asanas %}
                             <div class="asana-card">
-                                <div class="asana-image" style="background-image: url('data:image/jpeg;base64,{{ asana.photo }}')"></div>
+                                <div class="asana-image">
+                                    {% if asana.photo %}
+                                    <img src="data:image/jpeg;base64,{{ asana.photo }}" alt="{{ asana.name.name_ru }}">
+                                    {% else %}
+                                    <div class="no-image">Нет фото</div>
+                                    {% endif %}
+                                </div>
                                 <div class="asana-content">
-                                    <h3 class="asana-title">{{ asana.name.ru }}</h3>
+                                    <h3 class="asana-title">{{ asana.name.name_ru }}</h3>
                                     <div class="asana-details">
-                                        {% if asana.name.sanskrit %}
-                                            <p>Санскрит: {{ asana.name.sanskrit }}</p>
-                                        {% endif %}
-                                        {% if asana.name.transliteration %}
-                                            <p>Транслитерация: {{ asana.name.transliteration }}</p>
-                                        {% endif %}
-                                        {% if asana.name.definition %}
-                                            <p>Пояснение: {{ asana.name.definition }}</p>
+                                        {% if asana.name.name_sanskrit %}
+                                        <p class="sanskrit-name">{{ asana.name.name_sanskrit }}</p>
                                         {% endif %}
                                     </div>
                                     <div class="asana-actions">
-                                        <a href="/asana/{{ asana.id }}" class="btn-view">Подробнее</a>
-                                        {% if user_role in ['admin', 'expert'] %}
-                                            <button class="btn-delete delete-asana" data-id="{{ asana.id }}" data-name="{{ asana.name.ru }}">Удалить</button>
+                                        <a href="/asana/{{ asana.id.split('#')[-1].split('asana_')[-1] }}-page" class="btn-view">Подробнее</a>
+                                        {% if is_expert_or_admin %}
+                                        <button class="btn-delete delete-asana" data-id="{{ asana.id }}" data-name="{{ asana.name.name_ru }}">Удалить</button>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -336,24 +336,24 @@
                     <div class="asana-grid">
                         {% for asana in asanas %}
                             <div class="asana-card">
-                                <div class="asana-image" style="background-image: url('data:image/jpeg;base64,{{ asana.photo }}')"></div>
+                                <div class="asana-image">
+                                    {% if asana.photo %}
+                                    <img src="data:image/jpeg;base64,{{ asana.photo }}" alt="{{ asana.name.name_ru }}">
+                                    {% else %}
+                                    <div class="no-image">Нет фото</div>
+                                    {% endif %}
+                                </div>
                                 <div class="asana-content">
-                                    <h3 class="asana-title">{{ asana.name.ru }}</h3>
+                                    <h3 class="asana-title">{{ asana.name.name_ru }}</h3>
                                     <div class="asana-details">
-                                        {% if asana.name.sanskrit %}
-                                            <p>Санскрит: {{ asana.name.sanskrit }}</p>
-                                        {% endif %}
-                                        {% if asana.name.transliteration %}
-                                            <p>Транслитерация: {{ asana.name.transliteration }}</p>
-                                        {% endif %}
-                                        {% if asana.name.definition %}
-                                            <p>Пояснение: {{ asana.name.definition }}</p>
+                                        {% if asana.name.name_sanskrit %}
+                                        <p class="sanskrit-name">{{ asana.name.name_sanskrit }}</p>
                                         {% endif %}
                                     </div>
                                     <div class="asana-actions">
-                                        <a href="/asana/{{ asana.id }}" class="btn-view">Подробнее</a>
-                                        {% if user_role in ['admin', 'expert'] %}
-                                            <button class="btn-delete delete-asana" data-id="{{ asana.id }}" data-name="{{ asana.name.ru }}">Удалить</button>
+                                        <a href="/asana/{{ asana.id.split('#')[-1].split('asana_')[-1] }}-page" class="btn-view">Подробнее</a>
+                                        {% if is_expert_or_admin %}
+                                        <button class="btn-delete delete-asana" data-id="{{ asana.id }}" data-name="{{ asana.name.name_ru }}">Удалить</button>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -375,23 +375,23 @@
                         <div class="asana-grid">
                             {% for asana in asanas %}
                                 <div class="asana-card">
-                                    <div class="asana-image" style="background-image: url('data:image/jpeg;base64,{{ asana.photo }}')"></div>
+                                    <div class="asana-image">
+                                        {% if asana.photo %}
+                                        <img src="data:image/jpeg;base64,{{ asana.photo }}" alt="{{ asana.name.name_ru }}">
+                                        {% else %}
+                                        <div class="no-image">Нет фото</div>
+                                        {% endif %}
+                                    </div>
                                     <div class="asana-content">
-                                        <h3 class="asana-title">{{ asana.name.ru }}</h3>
+                                        <h3 class="asana-title">{{ asana.name.name_ru }}</h3>
                                         <div class="asana-details">
-                                            {% if asana.name.sanskrit %}
-                                                <p>Санскрит: {{ asana.name.sanskrit }}</p>
-                                            {% endif %}
-                                            {% if asana.name.transliteration %}
-                                                <p>Транслитерация: {{ asana.name.transliteration }}</p>
-                                            {% endif %}
-                                            {% if asana.name.definition %}
-                                                <p>Пояснение: {{ asana.name.definition }}</p>
+                                            {% if asana.name.name_sanskrit %}
+                                            <p class="sanskrit-name">{{ asana.name.name_sanskrit }}</p>
                                             {% endif %}
                                         </div>
                                         <div class="asana-actions">
-                                            <a href="/asana/{{ asana.id }}" class="btn-view">Подробнее</a>
-                                            <button class="btn-delete delete-asana" data-id="{{ asana.id }}" data-name="{{ asana.name.ru }}">Удалить</button>
+                                            <a href="/asana/{{ asana.id.split('#')[-1].split('asana_')[-1] }}-page" class="btn-view">Подробнее</a>
+                                            <button class="btn-delete delete-asana" data-id="{{ asana.id }}" data-name="{{ asana.name.name_ru }}">Удалить</button>
                                         </div>
                                     </div>
                                 </div>
@@ -462,25 +462,41 @@
                 } else {
                     // Добавляем найденные асаны
                     data.forEach(asana => {
-                        resultsGrid.innerHTML += `
-                            <div class="asana-card">
-                                <div class="asana-image" style="background-image: url('data:image/jpeg;base64,${asana.photo}')"></div>
-                                <div class="asana-content">
-                                    <h3 class="asana-title">${asana.name.ru}</h3>
-                                    <div class="asana-details">
-                                        ${asana.name.sanskrit ? `<p>Санскрит: ${asana.name.sanskrit}</p>` : ''}
-                                        ${asana.name.transliteration ? `<p>Транслитерация: ${asana.name.transliteration}</p>` : ''}
-                                        ${asana.name.definition ? `<p>Пояснение: ${asana.name.definition}</p>` : ''}
-                                    </div>
-                                    <div class="asana-actions">
-                                        <a href="/asana/${asana.id}" class="btn-view">Подробнее</a>
-                                        ${window.isExpertOrAdmin ? `
-                                            <button class="btn-delete delete-asana" data-id="${asana.id}" data-name="${asana.name.ru}">Удалить</button>
-                                        ` : ''}
-                                    </div>
+                        const card = document.createElement('div');
+                        card.className = 'asana-card';
+                        
+                        const imageHtml = asana.photo 
+                            ? `<img src="data:image/jpeg;base64,${asana.photo}" alt="${asana.name.name_ru}">` 
+                            : '<div class="no-image">Нет фото</div>';
+                            
+                        const sanskritHtml = asana.name.name_sanskrit 
+                            ? `<p class="sanskrit-name">${asana.name.name_sanskrit}</p>` 
+                            : '';
+                            
+                        // Извлекаем короткий ID из полного URI
+                        const asanaShortId = asana.id.split('#').pop();
+                            
+                        const deleteButton = window.isExpertOrAdmin 
+                            ? `<button class="btn-delete delete-asana" data-id="${asana.id}" data-name="${asana.name.name_ru}">Удалить</button>` 
+                            : '';
+                            
+                        card.innerHTML = `
+                            <div class="asana-image">
+                                ${imageHtml}
+                            </div>
+                            <div class="asana-content">
+                                <h3 class="asana-title">${asana.name.name_ru}</h3>
+                                <div class="asana-details">
+                                    ${sanskritHtml}
+                                </div>
+                                <div class="asana-actions">
+                                    <a href="/asana/${asanaShortId.split('_')[-1]}-page" class="btn-view">Подробнее</a>
+                                    ${deleteButton}
                                 </div>
                             </div>
                         `;
+                        
+                        resultsGrid.appendChild(card);
                     });
                 }
                 
@@ -498,13 +514,18 @@
     // Обработка удаления асаны
     document.addEventListener('click', async function(e) {
         if (e.target.classList.contains('delete-asana')) {
-            const asanaId = e.target.dataset.id;
+            const fullId = e.target.dataset.id;
+            // Извлекаем короткий ID из полного URI (после последнего _)
+            const asanaId = fullId.split('_').pop();
             const asanaName = e.target.dataset.name;
             
             if (confirm(`Вы уверены, что хотите удалить асану "${asanaName}"?`)) {
                 try {
-                    const response = await fetch(`/api/asanas/${asanaId}`, {
-                        method: 'DELETE'
+                    const response = await fetch(`/asanas/${asanaId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
                     });
                     
                     if (response.ok) {
@@ -512,7 +533,8 @@
                         e.target.closest('.asana-card').remove();
                         alert('Асана успешно удалена');
                     } else {
-                        alert('Ошибка при удалении асаны');
+                        const data = await response.json();
+                        alert(data.detail || 'Ошибка при удалении асаны');
                     }
                 } catch (error) {
                     console.error('Error deleting asana:', error);

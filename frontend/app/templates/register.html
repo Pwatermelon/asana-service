@@ -5,44 +5,171 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <title>Регистрация</title>
+    <title>Регистрация | Каталог асан</title>
     <style>
-    .auth-container { background: white; max-width: 400px; margin: 2em auto; padding: 2em; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .auth-title { text-align: center; font-size: 1.8em; margin-bottom: 1em; color: #111; }
+        .auth-container {
+            background: white;
+            max-width: 500px;
+            margin: 2em auto;
+            padding: 2.5em;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .auth-title {
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 0.5em;
+            color: #1a1a1a;
+            font-weight: 600;
+        }
+        .auth-subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 2em;
+            font-size: 0.95em;
+        }
+        .form-group {
+            margin-bottom: 1.5em;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5em;
+            color: #333;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.75em 1em;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .form-group input:focus {
+            border-color: #4A90E2;
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+            outline: none;
+        }
+        .password-requirements {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 0.5em;
+            padding-left: 0.5em;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 1em;
+            background: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background: #357ABD;
+        }
+        .login-link {
+            text-align: center;
+            margin-top: 1.5em;
+            color: #666;
+        }
+        .login-link a {
+            color: #4A90E2;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+        .error-message {
+            background: #FFF3F3;
+            color: #D63301;
+            padding: 1em;
+            border-radius: 8px;
+            margin-bottom: 1.5em;
+            border: 1px solid #FFD7D7;
+        }
+        .form-row {
+            display: flex;
+            gap: 1em;
+            margin-bottom: 1.5em;
+        }
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .info-text {
+            background: #F5F9FF;
+            padding: 1em;
+            border-radius: 8px;
+            margin-bottom: 2em;
+            border: 1px solid #E1EDFF;
+            color: #2C5282;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="auth-container">
-            <h1 class="auth-title">Регистрация эксперта</h1>
+            <h1 class="auth-title">Регистрация</h1>
+            <p class="auth-subtitle">Создайте аккаунт для доступа к каталогу асан</p>
+            
+            <div class="info-text">
+                После регистрации вы получите базовый доступ к каталогу. 
+                Для получения прав эксперта необходимо подтверждение администратора.
+            </div>
+
             <div id="error-message" class="error-message" style="display: none;"></div>
+            
             <form id="register-form">
                 <div class="form-group">
                     <label for="username">Логин</label>
-                    <input type="text" id="username" name="username" required>
+                    <input type="text" id="username" name="username" required 
+                           placeholder="Введите желаемый логин">
                 </div>
+                
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required>
+                    <input type="email" id="email" name="email" required 
+                           placeholder="example@domain.com">
                 </div>
-                <div class="form-group">
-                    <label for="first_name">Имя</label>
-                    <input type="text" id="first_name" name="first_name" required>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="first_name">Имя</label>
+                        <input type="text" id="first_name" name="first_name" required 
+                               placeholder="Ваше имя">
+                    </div>
+                    <div class="form-group">
+                        <label for="last_name">Фамилия</label>
+                        <input type="text" id="last_name" name="last_name" required 
+                               placeholder="Ваша фамилия">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="last_name">Фамилия</label>
-                    <input type="text" id="last_name" name="last_name" required>
-                </div>
+                
                 <div class="form-group">
                     <label for="password">Пароль</label>
-                    <input type="password" id="password" name="password" required>
+                    <input type="password" id="password" name="password" required 
+                           placeholder="Минимум 8 символов">
+                    <div class="password-requirements">
+                        Пароль должен содержать минимум 8 символов, включая буквы и цифры
+                    </div>
                 </div>
+                
                 <div class="form-group">
                     <label for="confirm_password">Подтверждение пароля</label>
-                    <input type="password" id="confirm_password" name="confirm_password" required>
+                    <input type="password" id="confirm_password" name="confirm_password" required 
+                           placeholder="Повторите пароль">
                 </div>
-                <button type="submit" class="btn-primary">Зарегистрироваться</button>
+                
+                <button type="submit" class="btn-primary">Создать аккаунт</button>
             </form>
+            
             <div class="login-link">
                 Уже есть аккаунт? <a href="/login">Войти</a>
             </div>
@@ -63,7 +190,17 @@
         const password = document.getElementById('password').value;
         const confirm_password = document.getElementById('confirm_password').value;
         
-        // Проверка паролей
+        // Валидация
+        if (password.length < 8) {
+            showError('Пароль должен содержать минимум 8 символов');
+            return;
+        }
+        
+        if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+            showError('Пароль должен содержать буквы и цифры');
+            return;
+        }
+        
         if (password !== confirm_password) {
             showError('Пароли не совпадают');
             return;
@@ -102,6 +239,9 @@
         const errorElement = document.getElementById('error-message');
         errorElement.textContent = message;
         errorElement.style.display = 'block';
+        
+        // Плавная прокрутка к сообщению об ошибке
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
     </script>
 </body>

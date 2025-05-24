@@ -332,7 +332,7 @@ def add_photo_to_asana(asana_id: str, photo_bytes: bytes, source_id: str = None)
 def get_asanas_by_first_letter(letter: str):
     logger.info(f"Getting asanas starting with letter: {letter}")
     asanas = load_asanas()
-    filtered_asanas = [asana for asana in asanas if asana["name"]["ru"] and asana["name"]["ru"][0].upper() == letter.upper()]
+    filtered_asanas = [asana for asana in asanas if asana["name"]["name_ru"] and asana["name"]["name_ru"][0].upper() == letter.upper()]
     logger.info(f"Found {len(filtered_asanas)} asanas starting with letter: {letter}")
     return filtered_asanas
 
@@ -340,10 +340,15 @@ def get_asanas_by_first_letter(letter: str):
 def get_asanas_by_source(source_id: str):
     logger.info(f"Getting asanas for source ID: {source_id}")
     g = get_graph()
+    
+    # Формируем полный URI источника, если передан только ID
+    if not source_id.startswith('http://'):
+        source_id = f"http://www.semanticweb.org/platinum_watermelon/ontologies/Asana#source_{source_id}"
     source_uri = URIRef(source_id)
     
     # Найти все фото, связанные с источником
     photo_uris = list(g.subjects(ASANA.hasSource, source_uri))
+    logger.debug(f"Found {len(photo_uris)} photos for source")
     
     # Найти все асаны, связанные с этими фото
     asana_uris = set()
@@ -351,23 +356,44 @@ def get_asanas_by_source(source_id: str):
         asanas = list(g.subjects(ASANA.hasPhoto, photo_uri))
         asana_uris.update(asanas)
     
+    # Также найти асаны, напрямую связанные с источником
+    direct_asanas = list(g.subjects(ASANA.hasSource, source_uri))
+    asana_uris.update(direct_asanas)
+    
+    logger.debug(f"Found {len(asana_uris)} total asana URIs")
+    
     # Загрузить данные для каждой асаны
     asanas = []
     for asana_uri in asana_uris:
+        # Проверяем, что это действительно асана
+        if (asana_uri, RDF.type, ASANA.Asana) not in g:
+            logger.debug(f"Skipping {asana_uri} - not an asana")
+            continue
+            
         name_obj = g.value(asana_uri, ASANA.hasName)
+        if not name_obj:
+            logger.debug(f"Skipping {asana_uri} - no name object")
+            continue
+            
         photo_objs = list(g.objects(asana_uri, ASANA.hasPhoto))
         
         # Фильтруем фото только от указанного источника
         source_photo_objs = [photo for photo in photo_objs if g.value(photo, ASANA.hasSource) == source_uri]
         
+        name_ru = str(g.value(name_obj, ASANA.nameInRussian)) if name_obj else ""
+        name_sanskrit = str(g.value(name_obj, ASANA.nameInSanskrit)) if name_obj and g.value(name_obj, ASANA.nameInSanskrit) else ""
+        transliteration = str(g.value(name_obj, ASANA.nameInTranslit)) if name_obj and g.value(name_obj, ASANA.nameInTranslit) else ""
+        definition = str(g.value(name_obj, ASANA.OWLDataProperty_c8100b71_09ff_49ec_8fbf_63fa1be3947a)) if name_obj and g.value(name_obj, ASANA.OWLDataProperty_c8100b71_09ff_49ec_8fbf_63fa1be3947a) else ""
+        
         name_data = {
-            "name_ru": str(g.value(name_obj, ASANA.nameInRussian)) if name_obj else "",
-            "name_sanskrit": str(g.value(name_obj, ASANA.nameInSanskrit)) if name_obj and g.value(name_obj, ASANA.nameInSanskrit) else "",
-            "transliteration": str(g.value(name_obj, ASANA.nameInTranslit)) if name_obj and g.value(name_obj, ASANA.nameInTranslit) else "",
-            "definition": str(g.value(name_obj, ASANA.OWLDataProperty_c8100b71_09ff_49ec_8fbf_63fa1be3947a)) if name_obj and g.value(name_obj, ASANA.OWLDataProperty_c8100b71_09ff_49ec_8fbf_63fa1be3947a) else ""
+            "name_ru": name_ru,
+            "name_sanskrit": name_sanskrit,
+            "transliteration": transliteration,
+            "definition": definition
         }
         
         photos_base64 = [str(g.value(photo, ASANA.base64Photo)) for photo in source_photo_objs if g.value(photo, ASANA.base64Photo)]
+        logger.debug(f"Found {len(photos_base64)} photos for asana {name_ru}")
         
         asana_data = {
             "id": str(asana_uri),
@@ -393,7 +419,7 @@ def search_asanas_by_name(query: str, fuzzy_threshold: float = 0.7):
         query_lower = query.lower()
         
         for asana in asanas:
-            name_ru = asana["name"]["ru"].lower()
+            name_ru = asana["name"]["name_ru"].lower()
             
             # Точное совпадение
             if query_lower in name_ru:
@@ -422,7 +448,7 @@ def search_asanas_by_name(query: str, fuzzy_threshold: float = 0.7):
         logger.warning("rapidfuzz not installed, using simple search")
         asanas = load_asanas()
         query_lower = query.lower()
-        results = [asana for asana in asanas if query_lower in asana["name"]["ru"].lower()]
+        results = [asana for asana in asanas if query_lower in asana["name"]["name_ru"].lower()]
         logger.info(f"Found {len(results)} asanas matching query: {query}")
         return results
 

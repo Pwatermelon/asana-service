@@ -204,9 +204,7 @@
         <span>{{ user_role|capitalize }}</span>
     </span>
     {% endif %}
-    <script>
-    window.isAdmin = {{ 'true' if is_admin else 'false' }};
-    </script>
+    <div id="app-container" data-is-admin="{{ 'true' if is_admin else 'false' }}"></div>
     <nav class="navbar">
         <div class="navbar-content">
             <a href="/" class="navbar-brand">Каталог<br>Асан</a>
@@ -290,57 +288,144 @@
     </footer>
     
     <script>
-    // При загрузке страницы
-    document.addEventListener('DOMContentLoaded', function() {
-        // Показываем/скрываем элементы управления для админа
-        const adminControls = document.querySelectorAll('.admin-only');
-        adminControls.forEach(control => {
-            control.style.display = window.isAdmin ? 'block' : 'none';
-        });
-
-        // Обработчик для формы загрузки онтологии
-        const uploadForm = document.getElementById('upload-ontology-form');
-        if (uploadForm) {
-            uploadForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const formData = new FormData();
-                const fileInput = document.getElementById('ontology-file');
-                formData.append('file', fileInput.files[0]);
-                
-                try {
-                    const response = await fetch('/api/ontology/upload', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    if (response.ok) {
-                        alert('Онтология успешно загружена');
-                        fileInput.value = '';
-                    } else {
-                        const data = await response.json();
-                        alert(data.detail || 'Ошибка при загрузке онтологии');
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('Ошибка при загрузке файла');
+        function getToken() {
+            // Сначала пробуем получить токен из cookie
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'session_token') {
+                    return value;
                 }
-            });
-
-            // Обработчик для отображения имени выбранного файла
-            const fileInput = document.getElementById('ontology-file');
-            const fileLabel = document.querySelector('.file-input-label');
-            const originalLabelText = fileLabel.innerHTML;
-
-            fileInput.addEventListener('change', function() {
-                if (this.files.length > 0) {
-                    fileLabel.innerHTML = `<i class="fas fa-upload"></i> ${this.files[0].name}`;
-                } else {
-                    fileLabel.innerHTML = originalLabelText;
-                }
-            });
+            }
+            return null;
         }
-    });
+
+        function updateNavbar() {
+            const navbarActions = document.getElementById('navbar-actions');
+            const userRole = '{{ user_role }}';  // Получаем роль из шаблона
+            
+            if (userRole && userRole !== 'guest') {
+                if (userRole === 'admin' || userRole === 'expert') {
+                    navbarActions.innerHTML = `
+                        <a href="/asana/add" class="btn-primary">Добавить асану</a>
+                        <a href="/sources/add" class="btn-primary" style="margin-left: 10px;">Добавить источник</a>
+                        <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                    `;
+                } else {
+                    navbarActions.innerHTML = `
+                        <a href="/logout" class="btn-logout"><span style="font-size:1.1em;">⎋</span> Выйти</a>
+                    `;
+                }
+            } else {
+                navbarActions.innerHTML = `
+                    <a href="/login" class="btn-primary">Войти</a>
+                `;
+            }
+        }
+
+        async function handleOntologyUpload(e) {
+            e.preventDefault();
+            const formMessage = document.getElementById('ontology-message');
+            formMessage.innerHTML = '';
+            const formData = new FormData(e.target);
+
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Загрузка...';
+
+            try {
+                const response = await fetch('/upload-ontology', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: formData,
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    formMessage.innerHTML = '<div class="success-message">Онтология успешно загружена</div>';
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    const responseData = await response.json().catch(() => null);
+                    let msg = responseData?.detail || 'Ошибка при загрузке онтологии';
+                    formMessage.innerHTML = `<div class="error-message">${msg}</div>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                formMessage.innerHTML = '<div class="error-message">Произошла ошибка при загрузке файла</div>';
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Загрузить';
+            }
+        }
+
+        async function handleUserRoleUpdate(e) {
+            e.preventDefault();
+            const formMessage = document.getElementById('role-message');
+            formMessage.innerHTML = '';
+            const username = document.getElementById('username').value;
+            const newRole = document.getElementById('new_role').value;
+
+            if (!username || !newRole) {
+                formMessage.innerHTML = '<div class="error-message">Заполните все поля</div>';
+                return;
+            }
+
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Обновление...';
+
+            try {
+                const response = await fetch('/admin/update-user-role', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        new_role: newRole
+                    }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    formMessage.innerHTML = '<div class="success-message">Роль пользователя обновлена</div>';
+                    e.target.reset();
+                } else {
+                    const responseData = await response.json().catch(() => null);
+                    let msg = responseData?.detail || 'Ошибка при обновлении роли';
+                    formMessage.innerHTML = `<div class="error-message">${msg}</div>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                formMessage.innerHTML = '<div class="error-message">Произошла ошибка при обновлении роли</div>';
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Обновить роль';
+            }
+        }
+
+        // При загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNavbar();
+            
+            const appContainer = document.getElementById('app-container');
+            const isAdmin = appContainer.dataset.isAdmin === 'true';
+            
+            // Показываем/скрываем элементы управления для админа
+            const adminControls = document.querySelectorAll('.admin-only');
+            adminControls.forEach(control => {
+                control.style.display = isAdmin ? 'block' : 'none';
+            });
+
+            // Обработчик для формы загрузки онтологии
+            const uploadForm = document.getElementById('upload-ontology-form');
+            if (uploadForm) {
+                uploadForm.addEventListener('submit', handleOntologyUpload);
+            }
+        });
     </script>
 </body>
 </html> 
