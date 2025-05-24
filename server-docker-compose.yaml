@@ -22,8 +22,16 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - ALGORITHM=${ALGORITHM}
       - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+      # Почтовые настройки
+      - SMTP_HOST=mailcow
+      - SMTP_PORT=${SUBMISSION_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM=${SMTP_FROM}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME}
     depends_on:
       - postgres
+      - mailcow
     volumes:
       - ./ontology_updated.owl:/app/ontology_updated.owl
 
