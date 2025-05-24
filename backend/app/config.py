@@ -44,5 +44,5 @@ SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "Каталог Асан")
 # Настройки приложения
 APP_NAME = "Каталог асан"
 APP_DESCRIPTION = "Каталог асан для йоги с возможностью поиска и фильтрации"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 APP_CONTACT_EMAIL = "admin@example.com"

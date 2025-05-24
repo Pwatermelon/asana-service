@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   backend:
-    image: yourdockerhubuser/asana-backend:latest
+    image: plwatermelon/asana-backend:latest
     container_name: backend
     ports:
       - "8000:8000"
@@ -36,7 +36,7 @@ services:
       - ./ontology_updated.owl:/app/ontology_updated.owl
 
   frontend:
-    image: yourdockerhubuser/asana-frontend:latest
+    image: plwatermelon/asana-frontend:latest
     container_name: frontend
     ports:
       - "3000:3000"
